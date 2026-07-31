@@ -439,6 +439,29 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
             expect(ctx.vacbot.run.calledWith('Generic', 'GetStats')).to.be.true;
         });
 
+        it('should restore the Generic command compatibility alias before dispatch', async () => {
+            class VacBotCommand {}
+            ctx.vacbot.vacBotCommand = VacBotCommand;
+            ctx.vacbot.run.callsFake((name, command) => {
+                if (name === 'Generic') {
+                    return new ctx.vacbot.vacBotCommand.Generic(command);
+                }
+                return undefined;
+            });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('control.extended.genericCommand.command')
+                .resolves({ val: 'GetInfo' });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('control.extended.genericCommand.payload')
+                .resolves({ val: '' });
+
+            const state = { ack: false, val: true };
+            await adapterCommands.handleStateChange(adapter, ctx, 'control.extended.genericCommand.run', state);
+
+            expect(ctx.vacbot.vacBotCommand.Generic).to.equal(VacBotCommand);
+            expect(ctx.vacbot.run.calledWith('Generic', 'GetInfo')).to.be.true;
+        });
+
         it('should dispatch generic command run with JSON payload', async () => {
             ctx.adapterProxy.getStateAsync
                 .withArgs('control.extended.genericCommand.command')
