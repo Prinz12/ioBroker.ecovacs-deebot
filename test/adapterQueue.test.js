@@ -153,7 +153,7 @@ describe('adapterQueue.js', () => {
             queue.addInitialGetCommands();
 
             expect(queue.entries.map(entry => entry.cmd)).to.deep.equal([
-                'GetNetInfo', 'Generic', 'Generic', 'Generic', 'Generic'
+                'GetNetInfo', 'Generic', 'Generic', 'Generic', 'Generic', 'Generic'
             ]);
             expect(queue.entries[1].arg1).to.equal('getInfo');
             expect(queue.entries[1].arg2).to.deep.equal([
@@ -171,10 +171,15 @@ describe('adapterQueue.js', () => {
                 'getAnimProtect',
                 'getTimeZone',
                 'getCustomCutMode',
-                'getBorderSwitch'
+                'getBorderSwitch',
+                'getRecognization',
+                'getHumanoidAI',
+                'getNarrowAdapt'
             ]);
-            expect(queue.entries[4]).to.include({ cmd: 'Generic', arg1: 'getMI' });
-            expect(queue.entries[4].arg2).to.deep.equal({ type: '0' });
+            expect(queue.entries[4]).to.include({ cmd: 'Generic', arg1: 'getLifeSpan' });
+            expect(queue.entries[4].arg2).to.deep.equal(['blade', 'weedRope', 'trimmerBrush']);
+            expect(queue.entries[5]).to.include({ cmd: 'Generic', arg1: 'getMI' });
+            expect(queue.entries[5].arg2).to.deep.equal({ type: '0' });
         });
 
         it('should not query an unverified lawn mower model', () => {

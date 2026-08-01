@@ -68,11 +68,14 @@ The GOAT O1200 LiDAR Pro (device class `2i0fns`) exposes read-only status under 
 - `trimBoundaryIds`, `trimVirtualBoundaryIds` + `startTrim` for boundary trimming
 - `settingsRefresh` for a read-only refresh of the global and per-area mowing settings
 - `autoCutDirection`, `rainDelayEnabled`, `rainDelayMinutes` and the `animalProtection*` states for global mowing settings
+- `aiRecognition`, `smartTrimmingAvoidance` and `narrowPathAdaptation` for robot behaviour
+- `maintenanceRefresh` plus read-only blade, trimmer-line and trimmer-brush values under `info.goat.maintenance.*`
+- `resetBladeLifeSpan`, `resetTrimmerLineLifeSpan` and `resetTrimmerBrushLifeSpan` for deliberate maintenance-counter resets
 - `settingsAreaId` + `loadAreaSettings` to load an area's current values into the local staging states; `applyAreaSettings` deliberately sends the complete staged height, efficiency, obstacle-height and direction payload
 
 `map.goat.svg` contains a directly displayable SVG, while `areas`, `geometry`, and the various `*Ids` states expose the decoded map data for VIS and scripts. Use `map.goat.refresh` for a manual read-only refresh. The map is also read once when the adapter connects.
 
-The current settings are exposed read-only under `info.goat.settings.*`. The per-area JSON in `areaParameters` includes the protocol-level `mowHeightLevel` and the calculated `cutHeightCm`; for the O1200, level 7 is 5.0 cm. Global setting writes and `applyAreaSettings` are rejected unless the most recently reported mower state is exactly `idle`, and every accepted write schedules a read-back. Editing an area staging state alone never sends a command to the mower.
+The current settings are exposed read-only under `info.goat.settings.*` and `info.goat.robotSettings.*`. The per-area JSON in `areaParameters` includes the protocol-level `mowHeightLevel` and the calculated `cutHeightCm`; for the O1200, level 7 is 5.0 cm. Setting writes, maintenance resets and `applyAreaSettings` are rejected unless the most recently reported mower state is exactly `idle`, and every accepted write schedules a read-back. Editing an area staging state alone never sends a command to the mower. Blade life is reported in minutes (with an additional rounded-up hours state), trimmer-line life in uses, and trimmer-brush life in days.
 
 The command names and payloads were derived from the official ECOVACS Android app. Selected IDs are checked against the most recently read map and new area/trim jobs are accepted only while `info.goat.workState` is `idle`. Pause, resume, and stop use the current mowing type reported by `getCleanInfo`; the adapter skips the command instead of guessing when that status is unavailable or unsupported. Other GOAT models do not receive these writable states until their protocol has been verified.
 

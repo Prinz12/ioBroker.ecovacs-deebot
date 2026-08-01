@@ -208,6 +208,10 @@ describe('adapterObjects.js', () => {
                 'control.goat.goToStation',
                 'control.goat.cancelGoToStation',
                 'control.goat.settingsRefresh',
+                'control.goat.maintenanceRefresh',
+                'control.goat.resetBladeLifeSpan',
+                'control.goat.resetTrimmerLineLifeSpan',
+                'control.goat.resetTrimmerBrushLifeSpan',
                 'control.goat.loadAreaSettings',
                 'control.goat.applyAreaSettings'
             ]) {
@@ -234,6 +238,9 @@ describe('adapterObjects.js', () => {
                 'control.goat.animalProtectionEnabled',
                 'control.goat.animalProtectionStart',
                 'control.goat.animalProtectionEnd',
+                'control.goat.aiRecognition',
+                'control.goat.smartTrimmingAvoidance',
+                'control.goat.narrowPathAdaptation',
                 'control.goat.settingsAreaId',
                 'control.goat.settingsMowHeightLevel',
                 'control.goat.settingsCutMode',
@@ -294,6 +301,21 @@ describe('adapterObjects.js', () => {
                 'info.goat.settings.timezone',
                 'info.goat.settings.timezoneOffsetMinutes',
                 'info.goat.settings.lastUpdate'
+            ]) {
+                const call = ctx.adapterProxy.createObjectNotExists.getCalls().find(item => item.args[0] === id);
+                expect(call, id).to.exist;
+                expect(call.args[4], id).to.equal(false);
+            }
+            for (const id of [
+                'info.goat.robotSettings.aiRecognition',
+                'info.goat.robotSettings.smartTrimmingAvoidance',
+                'info.goat.robotSettings.narrowPathAdaptation',
+                'info.goat.maintenance.rawLifeSpan',
+                'info.goat.maintenance.bladeRemainingMinutes',
+                'info.goat.maintenance.bladeRemainingHours',
+                'info.goat.maintenance.trimmerLineRemainingUses',
+                'info.goat.maintenance.trimmerBrushRemainingDays',
+                'info.goat.maintenance.lastUpdate'
             ]) {
                 const call = ctx.adapterProxy.createObjectNotExists.getCalls().find(item => item.args[0] === id);
                 expect(call, id).to.exist;

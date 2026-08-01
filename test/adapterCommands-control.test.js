@@ -73,6 +73,7 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
         // Ensure commandQueue and cleaningQueue have required stubs
         ctx.commandQueue.addGetLifespan = sinon.stub();
         ctx.commandQueue.addLawnMowerSettings = sinon.stub();
+        ctx.commandQueue.addLawnMowerMaintenance = sinon.stub();
         ctx.commandQueue.runAll = sinon.stub();
         ctx.cleaningQueue.run = sinon.stub();
 
@@ -635,6 +636,70 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
             await clock.tickAsync(2000);
             expect(ctx.commandQueue.addLawnMowerSettings.calledOnce).to.be.true;
             clock.restore();
+        });
+
+        it('should send the exact robot-setting payloads only while idle', async () => {
+            const clock = sinon.useFakeTimers();
+            ctx.adapterProxy.getStateAsync.withArgs('info.goat.workState').resolves({ val: 'idle' });
+
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.aiRecognition', { ack: false, val: true }
+            );
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.smartTrimmingAvoidance', { ack: false, val: false }
+            );
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.narrowPathAdaptation', { ack: false, val: true }
+            );
+
+            expect(ctx.vacbot.run.calledWith(
+                'Generic', 'setRecognization', { state: 1 }
+            )).to.be.true;
+            expect(ctx.vacbot.run.calledWith(
+                'Generic', 'setHumanoidAI', { enable: 0 }
+            )).to.be.true;
+            expect(ctx.vacbot.run.calledWith(
+                'Generic', 'setNarrowAdapt', { state: 1 }
+            )).to.be.true;
+            clock.restore();
+        });
+
+        it('should refresh and reset maintenance with exact life-span types', async () => {
+            const clock = sinon.useFakeTimers();
+            ctx.adapterProxy.getStateAsync.withArgs('info.goat.workState').resolves({ val: 'idle' });
+
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.maintenanceRefresh', { ack: false, val: true }
+            );
+            expect(ctx.commandQueue.addLawnMowerMaintenance.calledOnce).to.be.true;
+            expect(ctx.vacbot.run.called).to.be.false;
+
+            for (const [stateName, type] of [
+                ['resetBladeLifeSpan', 'blade'],
+                ['resetTrimmerLineLifeSpan', 'weedRope'],
+                ['resetTrimmerBrushLifeSpan', 'trimmerBrush']
+            ]) {
+                await adapterCommands.handleStateChange(
+                    adapter, ctx, `control.goat.${stateName}`, { ack: false, val: true }
+                );
+                expect(ctx.vacbot.run.calledWith(
+                    'Generic', 'resetLifeSpan', { type }
+                ), stateName).to.be.true;
+            }
+            clock.restore();
+        });
+
+        it('should reject robot settings and maintenance resets while not idle', async () => {
+            ctx.adapterProxy.getStateAsync.withArgs('info.goat.workState').resolves({ val: 'mowing' });
+
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.aiRecognition', { ack: false, val: true }
+            );
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.resetBladeLifeSpan', { ack: false, val: true }
+            );
+
+            expect(ctx.vacbot.run.called).to.be.false;
         });
 
         it('should compose complete rain and animal-protection payloads', async () => {

@@ -38,7 +38,10 @@ describe('goatSettings.js', () => {
             getAnimProtect: { code: 0, data: { enable: 0, start: '19:0', end: '7:0' } },
             getTimeZone: { code: 0, data: { tzm: 60, code: 'Europe/Berlin' } },
             getCustomCutMode: { code: 0, data: { enable: 1 } },
-            getBorderSwitch: { code: 0, data: { enable: 1, mode: 1 } }
+            getBorderSwitch: { code: 0, data: { enable: 1, mode: 1 } },
+            getRecognization: { code: 0, data: { state: 1 } },
+            getHumanoidAI: { code: 0, data: { enable: 0 } },
+            getNarrowAdapt: { code: 0, data: { state: 0 } }
         });
 
         expect(handled).to.be.true;
@@ -56,6 +59,40 @@ describe('goatSettings.js', () => {
         )).to.be.true;
         expect(ctx.adapterProxy.setStateConditional.calledWith(
             'info.goat.settings.borderMode', 1, true
+        )).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'info.goat.robotSettings.aiRecognition', true, true
+        )).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'control.goat.smartTrimmingAvoidance', false, true
+        )).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'info.goat.robotSettings.narrowPathAdaptation', false, true
+        )).to.be.true;
+    });
+
+    it('should expose maintenance values with their app units', () => {
+        const handled = goatSettings.handlePayload(ctx, [
+            { type: 'blade', left: 3074, total: 4800, percent: 65, state: 0 },
+            { type: 'weedRope', left: 68, total: 340, percent: 20, state: 1 },
+            { type: 'trimmerBrush', left: 23, total: 60, percent: 39, state: 1 }
+        ]);
+
+        expect(handled).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'info.goat.maintenance.bladeRemainingMinutes', 3074, true
+        )).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'info.goat.maintenance.bladeRemainingHours', 52, true
+        )).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'info.goat.maintenance.trimmerLineRemainingUses', 68, true
+        )).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'info.goat.maintenance.trimmerBrushRemainingDays', 23, true
+        )).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'info.goat.maintenance.trimmerLineCondition', 'worn', true
         )).to.be.true;
     });
 
