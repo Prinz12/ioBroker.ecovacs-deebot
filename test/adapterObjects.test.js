@@ -10,7 +10,8 @@ const { createMockAdapter, createMockCtx } = require('./mockHelper');
 // Mock helper module
 const mockHelper = {
     getStateNameById: sinon.stub(),
-    getUnixTimestamp: sinon.stub().returns(0)
+    getUnixTimestamp: sinon.stub().returns(0),
+    isLawnMowerPlatform: platformType => platformType === 'lawnMower' || platformType === 'goat'
 };
 
 // Load the module with mocked dependencies
@@ -172,6 +173,17 @@ describe('adapterObjects.js', () => {
             expect(ctx.adapterProxy.createObjectNotExists.calledWith('control.stop')).to.be.true;
         });
 
+        it('should remove unverified vacuum controls for lawn mowers', async () => {
+            ctx.getPlatformType.returns('lawnMower');
+
+            await adapterObjects.createInitialObjects(adapter, ctx);
+
+            for (const id of ['control.clean', 'control.clean_home', 'control.stop', 'control.charge', 'control.spot', 'control.edge']) {
+                expect(ctx.adapterProxy.deleteObjectIfExists.calledWith(id), id).to.be.true;
+                expect(ctx.adapterProxy.createObjectNotExists.calledWith(id), id).to.be.false;
+            }
+        });
+
     });
 
     describe('createAdditionalObjects', () => {
@@ -180,6 +192,32 @@ describe('adapterObjects.js', () => {
 
             // Should create objects based on model capabilities
             expect(ctx.getModel.called).to.be.true;
+        });
+
+        it('should create read-only GOAT information objects for lawn mowers', async () => {
+            ctx.getPlatformType.returns('lawnMower');
+
+            await adapterObjects.createAdditionalObjects(adapter, ctx);
+
+            expect(ctx.adapterProxy.createChannelNotExists.calledWith(
+                'info.goat', 'GOAT lawn mower information'
+            )).to.be.true;
+            for (const id of [
+                'info.goat.batteryLow',
+                'info.goat.isCharging',
+                'info.goat.chargeMode',
+                'info.goat.workState',
+                'info.goat.workTrigger',
+                'info.goat.features',
+                'info.goat.errorCodes',
+                'info.goat.hasError',
+                'info.goat.lastUpdate',
+                'info.goat.rawResponse'
+            ]) {
+                const call = ctx.adapterProxy.createObjectNotExists.getCalls().find(item => item.args[0] === id);
+                expect(call, id).to.exist;
+                expect(call.args[4], id).to.equal(false);
+            }
         });
     });
 

@@ -147,6 +147,21 @@ describe('adapterQueue.js', () => {
             expect(cmds).to.not.include('GetBatteryState');
         });
 
+        it('should add only supported read commands for a lawn mower', () => {
+            ctx.getPlatformType.returns('lawnMower');
+            queue.addInitialGetCommands();
+
+            expect(queue.entries.map(entry => entry.cmd)).to.deep.equal(['GetNetInfo', 'Generic']);
+            expect(queue.entries[1].arg1).to.equal('getInfo');
+            expect(queue.entries[1].arg2).to.deep.equal([
+                'getBattery',
+                'getChargeState',
+                'getCleanInfo',
+                'getRobotFeature',
+                'getError'
+            ]);
+        });
+
         it('should add airbot commands', () => {
             ctx.getPlatformType.returns('airbot');
             ctx.getModel().isModelTypeAirbot.returns(true);
@@ -204,6 +219,14 @@ describe('adapterQueue.js', () => {
             expect(cmds).to.not.include('GetSleepStatus');
         });
 
+        it('should poll only the Generic status bundle for a lawn mower', () => {
+            ctx.getPlatformType.returns('lawnMower');
+            queue.addStandardGetCommands();
+
+            expect(queue.entries.map(entry => entry.cmd)).to.deep.equal(['Generic']);
+            expect(queue.entries[0].arg1).to.equal('getInfo');
+        });
+
         it('should add GetStationState for non-yeedi devices with air drying', () => {
             ctx.getModel().hasAirDrying.returns(true);
             ctx.getPlatformType.returns('T20');
@@ -250,6 +273,13 @@ describe('adapterQueue.js', () => {
             const cmds = queue.entries.map(e => e.cmd);
             expect(cmds).to.not.include('GetLifeSpan');
         });
+
+        it('should skip lifespan for the current lawn mower platform name', () => {
+            ctx.getPlatformType.returns('lawnMower');
+            queue.addGetLifespan();
+            const cmds = queue.entries.map(e => e.cmd);
+            expect(cmds).to.not.include('GetLifeSpan');
+        });
     });
 
     describe('run()', () => {
@@ -288,6 +318,17 @@ describe('adapterQueue.js', () => {
             queue.add('Cmd', 'arg1', 'arg2', 'arg3');
             queue.startNextItemFromQueue();
             expect(ctx.vacbot.run.firstCall.args).to.deep.equal(['Cmd', 'arg1', 'arg2', 'arg3']);
+        });
+
+        it('should restore the Generic command alias before polling a lawn mower', () => {
+            class VacBotCommand {}
+            ctx.vacbot.vacBotCommand = VacBotCommand;
+            queue.addLawnMowerInfo();
+            queue.startNextItemFromQueue();
+
+            expect(ctx.vacbot.vacBotCommand.Generic).to.equal(VacBotCommand);
+            expect(ctx.vacbot.run.firstCall.args[0]).to.equal('Generic');
+            expect(ctx.vacbot.run.firstCall.args[1]).to.equal('getInfo');
         });
 
         it('should skip GetMaps when silent approach is active', () => {

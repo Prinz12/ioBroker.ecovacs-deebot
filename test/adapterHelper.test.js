@@ -392,6 +392,14 @@ describe('adapterHelper.js', () => {
         });
     });
 
+    describe('isLawnMowerPlatform', () => {
+        it('should accept current and legacy lawn mower platform names', () => {
+            expect(adapterHelper.isLawnMowerPlatform('lawnMower')).to.be.true;
+            expect(adapterHelper.isLawnMowerPlatform('goat')).to.be.true;
+            expect(adapterHelper.isLawnMowerPlatform('950')).to.be.false;
+        });
+    });
+
     describe('getCurrentDateAndTimeFormatted', () => {
         it('should return a formatted date string', () => {
             const mockAdapter = {

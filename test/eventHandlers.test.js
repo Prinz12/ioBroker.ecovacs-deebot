@@ -332,6 +332,40 @@ describe('eventHandlers.js - functionality', () => {
             )).to.be.true;
         });
 
+        it('genericCommandPayload - should expose confirmed lawn mower status values', () => {
+            ctx.getPlatformType.returns('lawnMower');
+            const payload = {
+                getBattery: { code: 0, data: { value: 100, isLow: 0 } },
+                getChargeState: { code: 0, data: { isCharging: 1, mode: 'slot' } },
+                getCleanInfo: { code: 0, data: { trigger: 'workComplete', other: '', state: 'idle' } },
+                getRobotFeature: {
+                    code: 0,
+                    data: {
+                        mapExtension: 1,
+                        secondaryCharger: 1,
+                        videoMoveSupportChannel: 1,
+                        videoMoveTask: 1
+                    }
+                },
+                getError: { code: 0, data: { code: [0] } }
+            };
+
+            events.genericCommandPayload(payload);
+
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.battery', 100, true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.batteryLow', false, true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.isCharging', true, true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.chargeMode', 'slot', true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.workState', 'idle', true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.workTrigger', 'workComplete', true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.mapExtension', true, true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.hasError', false, true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith(
+                'info.goat.errorCodes', JSON.stringify([0]), true
+            )).to.be.true;
+            expect(ctx.getDevice().setBatteryLevel.calledWith(100)).to.be.true;
+        });
+
         it('disconnect - should mark device disconnected and schedule retry', () => {
             ctx.connected = true;
             events.disconnect('some error');
