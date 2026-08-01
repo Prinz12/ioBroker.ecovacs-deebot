@@ -213,7 +213,12 @@ describe('adapterObjects.js', () => {
                 'control.goat.resetTrimmerLineLifeSpan',
                 'control.goat.resetTrimmerBrushLifeSpan',
                 'control.goat.loadAreaSettings',
-                'control.goat.applyAreaSettings'
+                'control.goat.applyAreaSettings',
+                'control.goat.scheduleRefresh',
+                'control.goat.scheduleLoad',
+                'control.goat.scheduleCreate',
+                'control.goat.scheduleUpdate',
+                'control.goat.scheduleDelete'
             ]) {
                 const call = ctx.adapterProxy.createObjectNotExists.getCalls().find(item => item.args[0] === id);
                 expect(call, id).to.exist;
@@ -245,7 +250,15 @@ describe('adapterObjects.js', () => {
                 'control.goat.settingsMowHeightLevel',
                 'control.goat.settingsCutMode',
                 'control.goat.settingsObstacleHeight',
-                'control.goat.settingsDirection'
+                'control.goat.settingsDirection',
+                'control.goat.scheduleId',
+                'control.goat.scheduleName',
+                'control.goat.scheduleEnabled',
+                'control.goat.scheduleCatchUp',
+                'control.goat.scheduleTasks',
+                'control.goat.scheduleDeleteConfirm',
+                'control.goat.scheduleCatchUpConfirm',
+                'control.goat.scheduleActivationConfirm'
             ]) {
                 const call = ctx.adapterProxy.createObjectNotExists.getCalls().find(item => item.args[0] === id);
                 expect(call, id).to.exist;
@@ -300,7 +313,15 @@ describe('adapterObjects.js', () => {
                 'info.goat.settings.borderMode',
                 'info.goat.settings.timezone',
                 'info.goat.settings.timezoneOffsetMinutes',
-                'info.goat.settings.lastUpdate'
+                'info.goat.settings.lastUpdate',
+                'info.goat.schedules.list',
+                'info.goat.schedules.count',
+                'info.goat.schedules.activeScheduleId',
+                'info.goat.schedules.activeScheduleName',
+                'info.goat.schedules.catchUpEnabled',
+                'info.goat.schedules.lastUpdate',
+                'info.goat.schedules.status',
+                'info.goat.schedules.lastError'
             ]) {
                 const call = ctx.adapterProxy.createObjectNotExists.getCalls().find(item => item.args[0] === id);
                 expect(call, id).to.exist;

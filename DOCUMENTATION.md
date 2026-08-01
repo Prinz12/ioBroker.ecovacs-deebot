@@ -284,6 +284,19 @@ GOAT support is currently limited to the verified O1200 LiDAR Pro device class `
 | `control.goat.trimBoundaryIds` | string | Comma-separated physical trim boundaries |
 | `control.goat.trimVirtualBoundaryIds` | string | Optional comma-separated virtual boundaries |
 | `control.goat.startTrim` | button | Starts `borderrotate` trimming after idle-state and ID validation |
+| `info.goat.schedules.list` | JSON | Decoded schedules and task arrays returned by `getSchedules` |
+| `control.goat.scheduleRefresh` | button | Reads schedules without changing them |
+| `control.goat.scheduleId` | string | Schedule selected for loading, updating, or deletion |
+| `control.goat.scheduleLoad` | button | Loads the selected schedule into the staging states |
+| `control.goat.scheduleName` | string | Staged schedule name, limited to 24 characters |
+| `control.goat.scheduleEnabled` | boolean | Whether the staged schedule should be active |
+| `control.goat.scheduleCatchUp` | boolean | Official `rotation`/catch-up mode |
+| `control.goat.scheduleTasks` | JSON | Complete desired task array; new tasks omit `ssid` |
+| `control.goat.scheduleCreate` | button | Creates a validated staged schedule |
+| `control.goat.scheduleUpdate` | button | Calculates and sends add/modify/delete task deltas |
+| `control.goat.scheduleDelete` | button | Deletes the selected schedule after confirmation |
+
+Schedule writes are accepted only while the mower reports `idle`, and are followed by a read-back. Set `scheduleDeleteConfirm` before deletion, `scheduleCatchUpConfirm` before enabling catch-up, and `scheduleActivationConfirm` before replacing another active schedule. These one-shot states reset after every attempt. A task contains `mowType`, `workType`, `isOpen`, `sDay`, `sTime`, `eDay`, and `eTime`; area or trimming tasks additionally require `ids`. Trimming (`mowType=3`) cannot be combined with catch-up mode.
 
 The map responses use a shortened LZMA-Alone header and compact 50 mm direction steps. The adapter decodes them locally and never sends a movement command during a refresh. The initial map read and its dependent layer reads go through the normal request throttle. A selection start is rejected when the map is missing, an ID is unknown, or the mower is not idle.
 

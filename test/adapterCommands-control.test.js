@@ -75,6 +75,7 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
         ctx.commandQueue.addLawnMowerSettings = sinon.stub();
         ctx.commandQueue.addLawnMowerMaintenance = sinon.stub();
         ctx.commandQueue.runAll = sinon.stub();
+        ctx.intervalQueue.run = sinon.stub();
         ctx.cleaningQueue.run = sinon.stub();
 
         // Reset all stub histories
@@ -620,6 +621,95 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
             expect(ctx.commandQueue.addLawnMowerSettings.calledOnce).to.be.true;
             expect(ctx.commandQueue.runAll.calledOnce).to.be.true;
             expect(ctx.vacbot.run.called).to.be.false;
+        });
+
+        it('should refresh and load schedules without sending a write command', async () => {
+            ctx.goatSchedules = [{
+                sid: '7', name: 'Werktage', using: 1, rotation: 0,
+                subsets: [{
+                    ssid: 'task-1', mowType: 1, workType: 1, isOpen: 1,
+                    sDay: 1, sTime: '09:00', eDay: 1, eTime: '11:00'
+                }]
+            }];
+            ctx.adapterProxy.getStateAsync
+                .withArgs('control.goat.scheduleId').resolves({ val: '7' });
+
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.scheduleRefresh', { ack: false, val: true }
+            );
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.scheduleLoad', { ack: false, val: true }
+            );
+
+            expect(ctx.intervalQueue.run.calledWith('Generic', 'getSchedules')).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith(
+                'control.goat.scheduleName', 'Werktage', true
+            )).to.be.true;
+            expect(ctx.vacbot.run.called).to.be.false;
+        });
+
+        it('should create a validated schedule and request read-back', async () => {
+            const clock = sinon.useFakeTimers();
+            const task = {
+                mowType: 1, workType: 1, isOpen: 1,
+                sDay: 1, sTime: '09:00', eDay: 1, eTime: '11:00'
+            };
+            const values = {
+                'info.goat.workState': 'idle',
+                'control.goat.scheduleId': '',
+                'control.goat.scheduleName': 'Werktage',
+                'control.goat.scheduleEnabled': true,
+                'control.goat.scheduleCatchUp': false,
+                'control.goat.scheduleTasks': JSON.stringify([task])
+            };
+            ctx.goatSchedules = [];
+            ctx.adapterProxy.getStateAsync.callsFake(id => Promise.resolve({ val: values[id] }));
+
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.scheduleCreate', { ack: false, val: true }
+            );
+
+            expect(ctx.vacbot.run.calledWith('Generic', 'setSchedules', {
+                name: 'Werktage', using: 1, rotation: 0, schedAct: 'add',
+                subsets: [{ ...task, taskAct: 'add' }]
+            })).to.be.true;
+            await clock.tickAsync(2000);
+            expect(ctx.intervalQueue.run.calledWith('Generic', 'getSchedules')).to.be.true;
+            clock.restore();
+        });
+
+        it('should require explicit confirmations for catch-up and deletion', async () => {
+            const task = {
+                ssid: 'task-1', mowType: 1, workType: 1, isOpen: 1,
+                sDay: 1, sTime: '09:00', eDay: 1, eTime: '11:00'
+            };
+            const schedule = {
+                sid: '7', name: 'Werktage', using: 1, rotation: 0, subsets: [task]
+            };
+            const values = {
+                'info.goat.workState': 'idle',
+                'control.goat.scheduleId': '7',
+                'control.goat.scheduleName': 'Werktage',
+                'control.goat.scheduleEnabled': true,
+                'control.goat.scheduleCatchUp': true,
+                'control.goat.scheduleTasks': JSON.stringify([task]),
+                'control.goat.scheduleCatchUpConfirm': false,
+                'control.goat.scheduleDeleteConfirm': false
+            };
+            ctx.goatSchedules = [schedule];
+            ctx.adapterProxy.getStateAsync.callsFake(id => Promise.resolve({ val: values[id] }));
+
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.scheduleUpdate', { ack: false, val: true }
+            );
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.scheduleDelete', { ack: false, val: true }
+            );
+
+            expect(ctx.vacbot.run.called).to.be.false;
+            expect(ctx.adapterProxy.setStateConditional.calledWith(
+                'info.goat.schedules.status', 'error', true
+            )).to.be.true;
         });
 
         it('should set automatic direction only while idle and schedule read-back', async () => {

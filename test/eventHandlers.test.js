@@ -332,6 +332,20 @@ describe('eventHandlers.js - functionality', () => {
             )).to.be.true;
         });
 
+        it('genericCommandPayload - should expose decoded GOAT schedules', () => {
+            ctx.getPlatformType.returns('lawnMower');
+            ctx.getModel().getDeviceClass = () => '2i0fns';
+
+            events.genericCommandPayload({ list: [] });
+
+            expect(ctx.adapterProxy.setStateConditional.calledWith(
+                'info.goat.schedules.list', '[]', true
+            )).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith(
+                'info.goat.schedules.status', 'ready', true
+            )).to.be.true;
+        });
+
         it('genericCommandPayload - should expose confirmed lawn mower status values', () => {
             ctx.getPlatformType.returns('lawnMower');
             ctx.getModel().getDeviceClass = () => '2i0fns';
