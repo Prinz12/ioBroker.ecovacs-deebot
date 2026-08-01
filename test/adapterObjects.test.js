@@ -200,6 +200,8 @@ describe('adapterObjects.js', () => {
             )).to.be.true;
             for (const id of [
                 'control.goat.startAuto',
+                'control.goat.startArea',
+                'control.goat.startTrim',
                 'control.goat.pause',
                 'control.goat.resume',
                 'control.goat.stop',
@@ -210,6 +212,16 @@ describe('adapterObjects.js', () => {
                 expect(call, id).to.exist;
                 expect(call.args[2], id).to.equal('boolean');
                 expect(call.args[3], id).to.equal('button');
+                expect(call.args[4], id).to.equal(true);
+            }
+            for (const id of [
+                'control.goat.areaIds',
+                'control.goat.trimBoundaryIds',
+                'control.goat.trimVirtualBoundaryIds'
+            ]) {
+                const call = ctx.adapterProxy.createObjectNotExists.getCalls().find(item => item.args[0] === id);
+                expect(call, id).to.exist;
+                expect(call.args[2], id).to.equal('string');
                 expect(call.args[4], id).to.equal(true);
             }
         });
@@ -253,6 +265,19 @@ describe('adapterObjects.js', () => {
                 const call = ctx.adapterProxy.createObjectNotExists.getCalls().find(item => item.args[0] === id);
                 expect(call, id).to.exist;
                 expect(call.args[4], id).to.equal(false);
+            }
+            expect(ctx.adapterProxy.createChannelNotExists.calledWith(
+                'map.goat', 'GOAT lawn map'
+            )).to.be.true;
+            for (const id of [
+                'map.goat.refresh',
+                'map.goat.mapId',
+                'map.goat.areaIds',
+                'map.goat.trimBoundaryIds',
+                'map.goat.geometry',
+                'map.goat.svg'
+            ]) {
+                expect(ctx.adapterProxy.createObjectNotExists.calledWith(id), id).to.be.true;
             }
         });
 

@@ -265,6 +265,28 @@ Writable states that trigger robot actions when set:
 
 ## How Commands Work
 
+### Experimental GOAT O1200 map and controls
+
+GOAT support is currently limited to the verified O1200 LiDAR Pro device class `2i0fns`.
+
+| State | Type | Description |
+| :--- | :--- | :--- |
+| `info.goat.*` | read-only | Battery, charging, work state, active mowing selection, features, and errors |
+| `map.goat.refresh` | button | Requests the current map without changing mower operation |
+| `map.goat.svg` | string | Standalone SVG with lawn, areas, virtual boundaries, no-go zones, and trim lines |
+| `map.goat.geometry` | JSON | Decoded coordinates in millimetres for custom visualisations |
+| `map.goat.areas` | JSON | Area metadata including `aid`, `said`, name, and centre |
+| `map.goat.areaIds` | JSON | Area IDs accepted by selected-area mowing |
+| `map.goat.trimBoundaryIds` | JSON | Physical boundary IDs accepted by trimming |
+| `map.goat.virtualBoundaryIds` | JSON | Virtual boundary IDs accepted by trimming |
+| `control.goat.areaIds` | string | Comma-separated area selection, for example `1,3,5` |
+| `control.goat.startArea` | button | Starts `spotArea` mowing after idle-state and ID validation |
+| `control.goat.trimBoundaryIds` | string | Comma-separated physical trim boundaries |
+| `control.goat.trimVirtualBoundaryIds` | string | Optional comma-separated virtual boundaries |
+| `control.goat.startTrim` | button | Starts `borderrotate` trimming after idle-state and ID validation |
+
+The map responses use a shortened LZMA-Alone header and compact 50 mm direction steps. The adapter decodes them locally and never sends a movement command during a refresh. The initial map read and its dependent layer reads go through the normal request throttle. A selection start is rejected when the map is missing, an ID is unknown, or the mower is not idle.
+
 ### Command Flow
 
 ```

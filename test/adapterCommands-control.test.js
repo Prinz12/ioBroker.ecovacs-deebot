@@ -534,6 +534,52 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
             expect(ctx.vacbot.run.calledWith('Generic', 'charge', { act: 'stop' })).to.be.true;
         });
 
+        it('should start selected areas only when IDs exist on the current map', async () => {
+            ctx.adapterProxy.getStateAsync.withArgs('info.goat.workState').resolves({ val: 'idle' });
+            ctx.adapterProxy.getStateAsync.withArgs('control.goat.areaIds').resolves({ val: '1, 3,1' });
+            ctx.adapterProxy.getStateAsync.withArgs('map.goat.areaIds').resolves({ val: '["1","2","3"]' });
+
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.startArea', { ack: false, val: true }
+            );
+
+            expect(ctx.vacbot.run.calledWith('Generic', 'clean', {
+                act: 'start', content: { type: 'spotArea', value: '1,3' }
+            })).to.be.true;
+        });
+
+        it('should start trimming with validated real and virtual boundary IDs', async () => {
+            ctx.adapterProxy.getStateAsync.withArgs('info.goat.workState').resolves({ val: 'idle' });
+            ctx.adapterProxy.getStateAsync.withArgs('control.goat.trimBoundaryIds').resolves({ val: '1,3' });
+            ctx.adapterProxy.getStateAsync.withArgs('map.goat.trimBoundaryIds').resolves({ val: '["1","3"]' });
+            ctx.adapterProxy.getStateAsync.withArgs('control.goat.trimVirtualBoundaryIds').resolves({ val: '2' });
+            ctx.adapterProxy.getStateAsync.withArgs('map.goat.virtualBoundaryIds').resolves({ val: '["1","2","3"]' });
+
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.startTrim', { ack: false, val: true }
+            );
+
+            expect(ctx.vacbot.run.calledWith('Generic', 'clean', {
+                act: 'start', content: { type: 'borderrotate', value: 'reid:1;reid:3;vid:2' }
+            })).to.be.true;
+        });
+
+        it('should reject unknown selected IDs and non-idle starts', async () => {
+            ctx.adapterProxy.getStateAsync.withArgs('info.goat.workState').resolves({ val: 'idle' });
+            ctx.adapterProxy.getStateAsync.withArgs('control.goat.areaIds').resolves({ val: '99' });
+            ctx.adapterProxy.getStateAsync.withArgs('map.goat.areaIds').resolves({ val: '["1","2"]' });
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.startArea', { ack: false, val: true }
+            );
+            expect(ctx.vacbot.run.called).to.be.false;
+
+            ctx.adapterProxy.getStateAsync.withArgs('info.goat.workState').resolves({ val: 'clean' });
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.startArea', { ack: false, val: true }
+            );
+            expect(ctx.vacbot.run.called).to.be.false;
+        });
+
         it('should not guess a mowing type for pause, resume, or stop', async () => {
             ctx.adapterProxy.getStateAsync
                 .withArgs('info.goat.cleanType')

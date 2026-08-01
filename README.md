@@ -60,12 +60,16 @@ To support a new model, usually changes are needed in both parts:
 
 ### Experimental GOAT O1200 support
 
-The GOAT O1200 LiDAR Pro (device class `2i0fns`) exposes read-only status under `info.goat.*` and model-gated controls under `control.goat.*`:
+The GOAT O1200 LiDAR Pro (device class `2i0fns`) exposes read-only status under `info.goat.*`, a decoded lawn map under `map.goat.*`, and model-gated controls under `control.goat.*`:
 
 - `startAuto`, `pause`, `resume`, `stop`
 - `goToStation`, `cancelGoToStation`
+- `areaIds` + `startArea` for selected-area mowing
+- `trimBoundaryIds`, `trimVirtualBoundaryIds` + `startTrim` for boundary trimming
 
-The command names and payloads were derived from the official ECOVACS Android app. Pause, resume, and stop use the current mowing type reported by `getCleanInfo`; the adapter skips the command instead of guessing when that status is unavailable or unsupported. Other GOAT models do not receive these writable states until their protocol has been verified.
+`map.goat.svg` contains a directly displayable SVG, while `areas`, `geometry`, and the various `*Ids` states expose the decoded map data for VIS and scripts. Use `map.goat.refresh` for a manual read-only refresh. The map is also read once when the adapter connects.
+
+The command names and payloads were derived from the official ECOVACS Android app. Selected IDs are checked against the most recently read map and new area/trim jobs are accepted only while `info.goat.workState` is `idle`. Pause, resume, and stop use the current mowing type reported by `getCleanInfo`; the adapter skips the command instead of guessing when that status is unavailable or unsupported. Other GOAT models do not receive these writable states until their protocol has been verified.
 
 ---
 

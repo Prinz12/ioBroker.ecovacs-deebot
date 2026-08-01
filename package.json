@@ -28,6 +28,7 @@
     "@iobroker/adapter-core": "^3.3.2",
     "axios": "1.17.0",
     "ecovacs-deebot": "1.0.0-alpha.23",
+    "lzma-purejs": "^0.9.3",
     "node-machine-id": "1.1.12"
   },
   "engines": {
