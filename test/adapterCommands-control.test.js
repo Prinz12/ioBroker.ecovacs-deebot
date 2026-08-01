@@ -439,12 +439,21 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
             expect(ctx.vacbot.run.calledWith('Generic', 'GetStats')).to.be.true;
         });
 
-        it('should restore the Generic command compatibility alias before dispatch', async () => {
-            class VacBotCommand {}
+        it('should restore a payload-safe Generic compatibility class before dispatch', async () => {
+            class VacBotCommand {
+                constructor(name, payload = {}) {
+                    this.name = name;
+                    if (!Object.prototype.hasOwnProperty.call(payload, 'id')) {
+                        Object.assign(payload, { id: 'test-id' });
+                    }
+                    this.args = payload;
+                }
+            }
             ctx.vacbot.vacBotCommand = VacBotCommand;
-            ctx.vacbot.run.callsFake((name, command) => {
+            const frozenPayload = Object.freeze(['getCleanInfo']);
+            ctx.vacbot.run.callsFake((name, command, payload) => {
                 if (name === 'Generic') {
-                    return new ctx.vacbot.vacBotCommand.Generic(command);
+                    return new ctx.vacbot.vacBotCommand.Generic(command, payload);
                 }
                 return undefined;
             });
@@ -453,13 +462,18 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
                 .resolves({ val: 'GetInfo' });
             ctx.adapterProxy.getStateAsync
                 .withArgs('control.extended.genericCommand.payload')
-                .resolves({ val: '' });
+                .resolves({ val: JSON.stringify(frozenPayload) });
 
             const state = { ack: false, val: true };
             await adapterCommands.handleStateChange(adapter, ctx, 'control.extended.genericCommand.run', state);
 
-            expect(ctx.vacbot.vacBotCommand.Generic).to.equal(VacBotCommand);
-            expect(ctx.vacbot.run.calledWith('Generic', 'GetInfo')).to.be.true;
+            expect(ctx.vacbot.vacBotCommand.Generic).to.not.equal(VacBotCommand);
+            expect(() => new ctx.vacbot.vacBotCommand.Generic('getInfo', frozenPayload)).to.not.throw();
+            const command = new ctx.vacbot.vacBotCommand.Generic('getInfo', frozenPayload);
+            expect(command.name).to.equal('getInfo');
+            expect(JSON.stringify(command.args)).to.equal('["getCleanInfo"]');
+            expect(frozenPayload).to.deep.equal(['getCleanInfo']);
+            expect(ctx.vacbot.run.calledWith('Generic', 'GetInfo', ['getCleanInfo'])).to.be.true;
         });
 
         it('should dispatch generic command run with JSON payload', async () => {

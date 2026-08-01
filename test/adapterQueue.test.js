@@ -338,15 +338,36 @@ describe('adapterQueue.js', () => {
             expect(ctx.vacbot.run.firstCall.args).to.deep.equal(['Cmd', 'arg1', 'arg2', 'arg3']);
         });
 
-        it('should restore the Generic command alias before polling a lawn mower', () => {
-            class VacBotCommand {}
+        it('should restore a payload-safe Generic command before polling a lawn mower', () => {
+            class VacBotCommand {
+                constructor(name, payload = {}) {
+                    this.name = name;
+                    if (!Object.prototype.hasOwnProperty.call(payload, 'id')) {
+                        Object.assign(payload, { id: 'test-id' });
+                    }
+                    this.args = payload;
+                }
+            }
             ctx.vacbot.vacBotCommand = VacBotCommand;
+            ctx.vacbot.run.callsFake((name, command, payload) => {
+                if (name === 'Generic') {
+                    return new ctx.vacbot.vacBotCommand.Generic(command, payload);
+                }
+                return undefined;
+            });
             queue.addLawnMowerInfo();
-            queue.startNextItemFromQueue();
 
-            expect(ctx.vacbot.vacBotCommand.Generic).to.equal(VacBotCommand);
+            expect(() => queue.startNextItemFromQueue()).to.not.throw();
+            expect(ctx.vacbot.vacBotCommand.Generic).to.not.equal(VacBotCommand);
             expect(ctx.vacbot.run.firstCall.args[0]).to.equal('Generic');
             expect(ctx.vacbot.run.firstCall.args[1]).to.equal('getInfo');
+            const command = new ctx.vacbot.vacBotCommand.Generic(
+                ctx.vacbot.run.firstCall.args[1], ctx.vacbot.run.firstCall.args[2]
+            );
+            expect(command.name).to.equal('getInfo');
+            expect(JSON.stringify(command.args)).to.equal(
+                '["getBattery","getChargeState","getCleanInfo","getRobotFeature","getError"]'
+            );
         });
 
         it('should skip GetMaps when silent approach is active', () => {
