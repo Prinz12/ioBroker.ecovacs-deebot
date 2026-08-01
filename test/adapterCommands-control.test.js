@@ -72,6 +72,7 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
         });
         // Ensure commandQueue and cleaningQueue have required stubs
         ctx.commandQueue.addGetLifespan = sinon.stub();
+        ctx.commandQueue.addLawnMowerSettings = sinon.stub();
         ctx.commandQueue.runAll = sinon.stub();
         ctx.cleaningQueue.run = sinon.stub();
 
@@ -608,6 +609,97 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
             expect(ctx.adapter.log.warn.calledWith(
                 'GOAT control is not verified for this mower model'
             )).to.be.true;
+        });
+
+        it('should refresh mowing settings with the verified read-only requests', async () => {
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.settingsRefresh', { ack: false, val: true }
+            );
+
+            expect(ctx.commandQueue.addLawnMowerSettings.calledOnce).to.be.true;
+            expect(ctx.commandQueue.runAll.calledOnce).to.be.true;
+            expect(ctx.vacbot.run.called).to.be.false;
+        });
+
+        it('should set automatic direction only while idle and schedule read-back', async () => {
+            const clock = sinon.useFakeTimers();
+            ctx.adapterProxy.getStateAsync.withArgs('info.goat.workState').resolves({ val: 'idle' });
+
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.autoCutDirection', { ack: false, val: true }
+            );
+
+            expect(ctx.vacbot.run.calledWith(
+                'Generic', 'setAutoCutDirection', { enable: 1 }
+            )).to.be.true;
+            await clock.tickAsync(2000);
+            expect(ctx.commandQueue.addLawnMowerSettings.calledOnce).to.be.true;
+            clock.restore();
+        });
+
+        it('should compose complete rain and animal-protection payloads', async () => {
+            const clock = sinon.useFakeTimers();
+            ctx.adapterProxy.getStateAsync.withArgs('info.goat.workState').resolves({ val: 'idle' });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('info.goat.settings.rainDelayEnabled').resolves({ val: true });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('info.goat.settings.animalProtectionEnabled').resolves({ val: false });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('info.goat.settings.animalProtectionStart').resolves({ val: '19:0' });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('info.goat.settings.animalProtectionEnd').resolves({ val: '7:0' });
+
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.rainDelayMinutes', { ack: false, val: 180 }
+            );
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.animalProtectionEnabled', { ack: false, val: true }
+            );
+
+            expect(ctx.vacbot.run.calledWith(
+                'Generic', 'setRainDelay', { enable: 1, delay: 180 }
+            )).to.be.true;
+            expect(ctx.vacbot.run.calledWith('Generic', 'setAnimProtect', {
+                enable: 1, start: '19:00', end: '07:00'
+            })).to.be.true;
+            clock.restore();
+        });
+
+        it('should stage and apply a complete verified per-area settings payload', async () => {
+            const clock = sinon.useFakeTimers();
+            const areaParameters = JSON.stringify([{
+                areaID: '4', mowHeightLevel: 4, cutMode: 7,
+                obstacleHeight: 2, angle: 180
+            }]);
+            ctx.adapterProxy.getStateAsync.withArgs('info.goat.workState').resolves({ val: 'idle' });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('info.goat.settings.areaParameters').resolves({ val: areaParameters });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('control.goat.settingsAreaId').resolves({ val: '4' });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('control.goat.settingsMowHeightLevel').resolves({ val: 4 });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('control.goat.settingsCutMode').resolves({ val: 7 });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('control.goat.settingsObstacleHeight').resolves({ val: 2 });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('control.goat.settingsDirection').resolves({ val: 180 });
+
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.loadAreaSettings', { ack: false, val: true }
+            );
+            expect(ctx.adapterProxy.setStateConditional.calledWith(
+                'control.goat.settingsMowHeightLevel', 4, true
+            )).to.be.true;
+
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.applyAreaSettings', { ack: false, val: true }
+            );
+            expect(ctx.vacbot.run.calledWith('Generic', 'setAreaParameter', {
+                areaID: '4', mowHeightLevel: 4, cutMode: 7,
+                obstacleHeight: 2, angle: 180
+            })).to.be.true;
+            clock.restore();
         });
     });
 

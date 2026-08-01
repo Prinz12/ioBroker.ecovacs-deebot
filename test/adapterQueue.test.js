@@ -152,7 +152,9 @@ describe('adapterQueue.js', () => {
             ctx.getModel().getDeviceClass.returns('2i0fns');
             queue.addInitialGetCommands();
 
-            expect(queue.entries.map(entry => entry.cmd)).to.deep.equal(['GetNetInfo', 'Generic', 'Generic']);
+            expect(queue.entries.map(entry => entry.cmd)).to.deep.equal([
+                'GetNetInfo', 'Generic', 'Generic', 'Generic', 'Generic'
+            ]);
             expect(queue.entries[1].arg1).to.equal('getInfo');
             expect(queue.entries[1].arg2).to.deep.equal([
                 'getBattery',
@@ -161,8 +163,18 @@ describe('adapterQueue.js', () => {
                 'getRobotFeature',
                 'getError'
             ]);
-            expect(queue.entries[2]).to.include({ cmd: 'Generic', arg1: 'getMI' });
-            expect(queue.entries[2].arg2).to.deep.equal({ type: '0' });
+            expect(queue.entries[2]).to.include({ cmd: 'Generic', arg1: 'getAreaParameter' });
+            expect(queue.entries[3].arg1).to.equal('getInfo');
+            expect(queue.entries[3].arg2).to.deep.equal([
+                'getAutoCutDirection',
+                'getRainDelay',
+                'getAnimProtect',
+                'getTimeZone',
+                'getCustomCutMode',
+                'getBorderSwitch'
+            ]);
+            expect(queue.entries[4]).to.include({ cmd: 'Generic', arg1: 'getMI' });
+            expect(queue.entries[4].arg2).to.deep.equal({ type: '0' });
         });
 
         it('should not query an unverified lawn mower model', () => {

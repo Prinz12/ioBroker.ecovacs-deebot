@@ -79,10 +79,10 @@ describe('eventHandlers.js - integrity checks', () => {
 
     describe('syntax integrity', () => {
         it('node --check should pass on the file', function() {
-            const { execSync } = require('child_process');
+            const { execFileSync } = require('child_process');
             const filePath = require.resolve('../lib/eventHandlers');
             expect(() => {
-                execSync('node --check ' + JSON.stringify(filePath), { stdio: 'pipe' });
+                execFileSync(process.execPath, ['--check', filePath], { stdio: 'pipe' });
             }).not.to.throw();
         });
     });

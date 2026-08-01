@@ -206,7 +206,10 @@ describe('adapterObjects.js', () => {
                 'control.goat.resume',
                 'control.goat.stop',
                 'control.goat.goToStation',
-                'control.goat.cancelGoToStation'
+                'control.goat.cancelGoToStation',
+                'control.goat.settingsRefresh',
+                'control.goat.loadAreaSettings',
+                'control.goat.applyAreaSettings'
             ]) {
                 const call = ctx.adapterProxy.createObjectNotExists.getCalls().find(item => item.args[0] === id);
                 expect(call, id).to.exist;
@@ -222,6 +225,23 @@ describe('adapterObjects.js', () => {
                 const call = ctx.adapterProxy.createObjectNotExists.getCalls().find(item => item.args[0] === id);
                 expect(call, id).to.exist;
                 expect(call.args[2], id).to.equal('string');
+                expect(call.args[4], id).to.equal(true);
+            }
+            for (const id of [
+                'control.goat.autoCutDirection',
+                'control.goat.rainDelayEnabled',
+                'control.goat.rainDelayMinutes',
+                'control.goat.animalProtectionEnabled',
+                'control.goat.animalProtectionStart',
+                'control.goat.animalProtectionEnd',
+                'control.goat.settingsAreaId',
+                'control.goat.settingsMowHeightLevel',
+                'control.goat.settingsCutMode',
+                'control.goat.settingsObstacleHeight',
+                'control.goat.settingsDirection'
+            ]) {
+                const call = ctx.adapterProxy.createObjectNotExists.getCalls().find(item => item.args[0] === id);
+                expect(call, id).to.exist;
                 expect(call.args[4], id).to.equal(true);
             }
         });
@@ -260,7 +280,20 @@ describe('adapterObjects.js', () => {
                 'info.goat.errorCodes',
                 'info.goat.hasError',
                 'info.goat.lastUpdate',
-                'info.goat.rawResponse'
+                'info.goat.rawResponse',
+                'info.goat.settings.areaParameters',
+                'info.goat.settings.autoCutDirection',
+                'info.goat.settings.rainDelayEnabled',
+                'info.goat.settings.rainDelayMinutes',
+                'info.goat.settings.animalProtectionEnabled',
+                'info.goat.settings.animalProtectionStart',
+                'info.goat.settings.animalProtectionEnd',
+                'info.goat.settings.customCutMode',
+                'info.goat.settings.borderModeEnabled',
+                'info.goat.settings.borderMode',
+                'info.goat.settings.timezone',
+                'info.goat.settings.timezoneOffsetMinutes',
+                'info.goat.settings.lastUpdate'
             ]) {
                 const call = ctx.adapterProxy.createObjectNotExists.getCalls().find(item => item.args[0] === id);
                 expect(call, id).to.exist;
