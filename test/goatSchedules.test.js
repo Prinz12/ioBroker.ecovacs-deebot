@@ -27,6 +27,18 @@ function createTask(overrides = {}) {
     };
 }
 
+/** Assert a rejected schedule draft without relying on a global Chai plugin. */
+async function expectDraftError(ctx, message) {
+    let actualError;
+    try {
+        await goatSchedules.readDraft(ctx);
+    } catch (error) {
+        actualError = error;
+    }
+    expect(actualError).to.be.instanceOf(Error);
+    expect(actualError.message).to.equal(message);
+}
+
 describe('goatSchedules.js', () => {
     it('decodes and exposes the official getSchedules response', () => {
         const ctx = createMockCtx();
@@ -120,9 +132,39 @@ describe('goatSchedules.js', () => {
         };
         ctx.adapterProxy.getStateAsync.callsFake(id => Promise.resolve({ val: values[id] }));
 
-        await expect(goatSchedules.readDraft(ctx)).to.be.rejectedWith(
-            'Trimming schedules do not support catch-up mode'
-        );
+        await expectDraftError(ctx, 'Trimming schedules do not support catch-up mode');
+    });
+
+    it('rejects task times outside the official 15-minute grid', async () => {
+        const ctx = createMockCtx();
+        const values = {
+            'control.goat.scheduleId': '',
+            'control.goat.scheduleName': 'Zu kurz',
+            'control.goat.scheduleEnabled': false,
+            'control.goat.scheduleCatchUp': false,
+            'control.goat.scheduleTasks': JSON.stringify([
+                createTask({ sTime: '00:01', eTime: '00:02' })
+            ])
+        };
+        ctx.adapterProxy.getStateAsync.callsFake(id => Promise.resolve({ val: values[id] }));
+
+        await expectDraftError(ctx, 'Task times must use 15-minute steps');
+    });
+
+    it('rejects a zero-length task on the same weekday', async () => {
+        const ctx = createMockCtx();
+        const values = {
+            'control.goat.scheduleId': '',
+            'control.goat.scheduleName': 'Ohne Dauer',
+            'control.goat.scheduleEnabled': false,
+            'control.goat.scheduleCatchUp': false,
+            'control.goat.scheduleTasks': JSON.stringify([
+                createTask({ sTime: '09:00', eTime: '09:00' })
+            ])
+        };
+        ctx.adapterProxy.getStateAsync.callsFake(id => Promise.resolve({ val: values[id] }));
+
+        await expectDraftError(ctx, 'Task duration must be at least 15 minutes');
     });
 
     it('builds the official schedule deletion payload', () => {
