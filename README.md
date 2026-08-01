@@ -58,6 +58,15 @@ To support a new model, usually changes are needed in both parts:
     *   **Event Mapping:** Linking library events to the corresponding ioBroker states.
     *   **Extended Logic:** Implementing complex features or specific ioBroker-side helpers.
 
+### Experimental GOAT O1200 support
+
+The GOAT O1200 LiDAR Pro (device class `2i0fns`) exposes read-only status under `info.goat.*` and model-gated controls under `control.goat.*`:
+
+- `startAuto`, `pause`, `resume`, `stop`
+- `goToStation`, `cancelGoToStation`
+
+The command names and payloads were derived from the official ECOVACS Android app. Pause, resume, and stop use the current mowing type reported by `getCleanInfo`; the adapter skips the command instead of guessing when that status is unavailable or unsupported. Other GOAT models do not receive these writable states until their protocol has been verified.
+
 ---
 
 ## Changelog

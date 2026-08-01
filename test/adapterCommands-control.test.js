@@ -477,6 +477,80 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
         });
     });
 
+    describe('verified GOAT controls', () => {
+        beforeEach(() => {
+            ctx.getPlatformType.returns('lawnMower');
+            ctx.getModel().getDeviceClass.returns('2i0fns');
+        });
+
+        it('should start automatic mowing with the app-verified payload', async () => {
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.startAuto', { ack: false, val: true }
+            );
+
+            expect(ctx.vacbot.run.calledWith(
+                'Generic', 'clean', { act: 'start', content: { type: 'auto' } }
+            )).to.be.true;
+        });
+
+        it('should pause, resume, and stop using the current mowing type from getCleanInfo', async () => {
+            ctx.adapterProxy.getStateAsync
+                .withArgs('info.goat.cleanType')
+                .resolves({ val: 'spotArea' });
+
+            for (const action of ['pause', 'resume', 'stop']) {
+                await adapterCommands.handleStateChange(
+                    adapter, ctx, `control.goat.${action}`, { ack: false, val: true }
+                );
+                expect(ctx.vacbot.run.calledWith(
+                    'Generic', 'clean', { act: action, content: { type: 'spotArea' } }
+                ), action).to.be.true;
+            }
+        });
+
+        it('should expose station go and cancel commands with exact payloads', async () => {
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.goToStation', { ack: false, val: true }
+            );
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.cancelGoToStation', { ack: false, val: true }
+            );
+
+            expect(ctx.vacbot.run.calledWith('Generic', 'charge', { act: 'go' })).to.be.true;
+            expect(ctx.vacbot.run.calledWith('Generic', 'charge', { act: 'stop' })).to.be.true;
+        });
+
+        it('should not guess a mowing type for pause, resume, or stop', async () => {
+            ctx.adapterProxy.getStateAsync
+                .withArgs('info.goat.cleanType')
+                .resolves({ val: '' });
+
+            for (const action of ['pause', 'resume', 'stop']) {
+                await adapterCommands.handleStateChange(
+                    adapter, ctx, `control.goat.${action}`, { ack: false, val: true }
+                );
+            }
+
+            expect(ctx.vacbot.run.called).to.be.false;
+            expect(ctx.adapter.log.warn.calledWith(
+                'Skip GOAT command: no supported active mowing type is available'
+            )).to.be.true;
+        });
+
+        it('should reject the commands for an unverified mower class', async () => {
+            ctx.getModel().getDeviceClass.returns('other_class');
+
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.startAuto', { ack: false, val: true }
+            );
+
+            expect(ctx.vacbot.run.called).to.be.false;
+            expect(ctx.adapter.log.warn.calledWith(
+                'GOAT control is not verified for this mower model'
+            )).to.be.true;
+        });
+    });
+
     // ======================================================================
     // Edge cases and connection states
     // ======================================================================

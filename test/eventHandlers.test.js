@@ -338,7 +338,22 @@ describe('eventHandlers.js - functionality', () => {
             const payload = {
                 getBattery: { code: 0, data: { value: 100, isLow: 0 } },
                 getChargeState: { code: 0, data: { isCharging: 1, mode: 'slot' } },
-                getCleanInfo: { code: 0, data: { trigger: 'workComplete', other: '', state: 'idle' } },
+                getCleanInfo: {
+                    code: 0,
+                    data: {
+                        trigger: 'app',
+                        other: '',
+                        state: 'clean',
+                        cleanState: {
+                            motionState: 'working',
+                            content: {
+                                type: 'spotArea',
+                                value: '1,2',
+                                subContent: { type: 'back', value: '3' }
+                            }
+                        }
+                    }
+                },
                 getRobotFeature: {
                     code: 0,
                     data: {
@@ -357,8 +372,13 @@ describe('eventHandlers.js - functionality', () => {
             expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.batteryLow', false, true)).to.be.true;
             expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.isCharging', true, true)).to.be.true;
             expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.chargeMode', 'slot', true)).to.be.true;
-            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.workState', 'idle', true)).to.be.true;
-            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.workTrigger', 'workComplete', true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.workState', 'clean', true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.workTrigger', 'app', true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.cleanType', 'spotArea', true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.cleanValue', '1,2', true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.subCleanType', 'back', true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.subCleanValue', '3', true)).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.motionState', 'working', true)).to.be.true;
             expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.mapExtension', true, true)).to.be.true;
             expect(ctx.adapterProxy.setStateConditional.calledWith('info.goat.hasError', false, true)).to.be.true;
             expect(ctx.adapterProxy.setStateConditional.calledWith(

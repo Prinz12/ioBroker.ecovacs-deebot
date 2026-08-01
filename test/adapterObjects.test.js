@@ -11,7 +11,11 @@ const { createMockAdapter, createMockCtx } = require('./mockHelper');
 const mockHelper = {
     getStateNameById: sinon.stub(),
     getUnixTimestamp: sinon.stub().returns(0),
-    isLawnMowerPlatform: platformType => platformType === 'lawnMower' || platformType === 'goat'
+    isLawnMowerPlatform: platformType => platformType === 'lawnMower' || platformType === 'goat',
+    supportsLawnMowerInfo: (platformType, deviceClass) =>
+        (platformType === 'lawnMower' || platformType === 'goat') && deviceClass === '2i0fns',
+    supportsLawnMowerControl: (platformType, deviceClass) =>
+        (platformType === 'lawnMower' || platformType === 'goat') && deviceClass === '2i0fns'
 };
 
 // Load the module with mocked dependencies
@@ -182,6 +186,32 @@ describe('adapterObjects.js', () => {
                 expect(ctx.adapterProxy.deleteObjectIfExists.calledWith(id), id).to.be.true;
                 expect(ctx.adapterProxy.createObjectNotExists.calledWith(id), id).to.be.false;
             }
+            expect(ctx.adapterProxy.deleteChannelIfExists.calledWith('control.goat')).to.be.true;
+        });
+
+        it('should create model-gated GOAT controls for the verified O1200 class', async () => {
+            ctx.getPlatformType.returns('lawnMower');
+            ctx.getModel().getDeviceClass.returns('2i0fns');
+
+            await adapterObjects.createInitialObjects(adapter, ctx);
+
+            expect(ctx.adapterProxy.createChannelNotExists.calledWith(
+                'control.goat', 'GOAT lawn mower controls'
+            )).to.be.true;
+            for (const id of [
+                'control.goat.startAuto',
+                'control.goat.pause',
+                'control.goat.resume',
+                'control.goat.stop',
+                'control.goat.goToStation',
+                'control.goat.cancelGoToStation'
+            ]) {
+                const call = ctx.adapterProxy.createObjectNotExists.getCalls().find(item => item.args[0] === id);
+                expect(call, id).to.exist;
+                expect(call.args[2], id).to.equal('boolean');
+                expect(call.args[3], id).to.equal('button');
+                expect(call.args[4], id).to.equal(true);
+            }
         });
 
     });
@@ -209,6 +239,11 @@ describe('adapterObjects.js', () => {
                 'info.goat.chargeMode',
                 'info.goat.workState',
                 'info.goat.workTrigger',
+                'info.goat.cleanType',
+                'info.goat.cleanValue',
+                'info.goat.subCleanType',
+                'info.goat.subCleanValue',
+                'info.goat.motionState',
                 'info.goat.features',
                 'info.goat.errorCodes',
                 'info.goat.hasError',

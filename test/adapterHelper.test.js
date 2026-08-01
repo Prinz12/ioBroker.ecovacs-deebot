@@ -409,6 +409,15 @@ describe('adapterHelper.js', () => {
         });
     });
 
+    describe('supportsLawnMowerControl', () => {
+        it('should accept only the GOAT O1200 class verified from the official app', () => {
+            expect(adapterHelper.supportsLawnMowerControl('lawnMower', '2i0fns')).to.be.true;
+            expect(adapterHelper.supportsLawnMowerControl('goat', '2i0fns')).to.be.true;
+            expect(adapterHelper.supportsLawnMowerControl('lawnMower', 'other_class')).to.be.false;
+            expect(adapterHelper.supportsLawnMowerControl('950', '2i0fns')).to.be.false;
+        });
+    });
+
     describe('getCurrentDateAndTimeFormatted', () => {
         it('should return a formatted date string', () => {
             const mockAdapter = {
