@@ -73,9 +73,9 @@ describe('goatSettings.js', () => {
 
     it('should expose maintenance values with their app units', () => {
         const handled = goatSettings.handlePayload(ctx, [
-            { type: 'blade', left: 3074, total: 4800, percent: 65, state: 0 },
-            { type: 'weedRope', left: 68, total: 340, percent: 20, state: 1 },
-            { type: 'trimmerBrush', left: 23, total: 60, percent: 39, state: 1 }
+            { type: 'blade', left: 3074, total: 4800 },
+            { type: 'weedRope', left: 68, total: 340 },
+            { type: 'trimmerBrush', left: 23, total: 60 }
         ]);
 
         expect(handled).to.be.true;
@@ -92,7 +92,10 @@ describe('goatSettings.js', () => {
             'info.goat.maintenance.trimmerBrushRemainingDays', 23, true
         )).to.be.true;
         expect(ctx.adapterProxy.setStateConditional.calledWith(
-            'info.goat.maintenance.trimmerLineCondition', 'worn', true
+            'info.goat.maintenance.bladePercent', 65, true
+        )).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'info.goat.maintenance.trimmerLineCondition', 'slightlyWorn', true
         )).to.be.true;
     });
 
