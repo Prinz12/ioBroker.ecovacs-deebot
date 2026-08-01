@@ -20,6 +20,7 @@ function createMockModel(overrides = {}) {
         isModelTypeX2: sinon.stub().returns(false),
         isModelTypeT9Based: sinon.stub().returns(false),
         getModelType: sinon.stub().returns('950'),
+        getDeviceClass: sinon.stub().returns('test_class'),
         getPlatformType: sinon.stub().returns('950'),
         getSmartType: sinon.stub().returns('950'),
 

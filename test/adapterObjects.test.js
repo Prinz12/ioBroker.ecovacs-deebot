@@ -196,6 +196,7 @@ describe('adapterObjects.js', () => {
 
         it('should create read-only GOAT information objects for lawn mowers', async () => {
             ctx.getPlatformType.returns('lawnMower');
+            ctx.getModel().getDeviceClass.returns('2i0fns');
 
             await adapterObjects.createAdditionalObjects(adapter, ctx);
 
@@ -218,6 +219,15 @@ describe('adapterObjects.js', () => {
                 expect(call, id).to.exist;
                 expect(call.args[4], id).to.equal(false);
             }
+        });
+
+        it('should not create GOAT information objects for an unverified mower model', async () => {
+            ctx.getPlatformType.returns('lawnMower');
+            ctx.getModel().getDeviceClass.returns('other_class');
+
+            await adapterObjects.createAdditionalObjects(adapter, ctx);
+
+            expect(ctx.adapterProxy.createChannelNotExists.calledWith('info.goat')).to.be.false;
         });
     });
 

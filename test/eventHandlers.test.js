@@ -334,6 +334,7 @@ describe('eventHandlers.js - functionality', () => {
 
         it('genericCommandPayload - should expose confirmed lawn mower status values', () => {
             ctx.getPlatformType.returns('lawnMower');
+            ctx.getModel().getDeviceClass = () => '2i0fns';
             const payload = {
                 getBattery: { code: 0, data: { value: 100, isLow: 0 } },
                 getChargeState: { code: 0, data: { isCharging: 1, mode: 'slot' } },

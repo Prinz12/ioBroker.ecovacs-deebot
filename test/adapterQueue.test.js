@@ -149,6 +149,7 @@ describe('adapterQueue.js', () => {
 
         it('should add only supported read commands for a lawn mower', () => {
             ctx.getPlatformType.returns('lawnMower');
+            ctx.getModel().getDeviceClass.returns('2i0fns');
             queue.addInitialGetCommands();
 
             expect(queue.entries.map(entry => entry.cmd)).to.deep.equal(['GetNetInfo', 'Generic']);
@@ -160,6 +161,14 @@ describe('adapterQueue.js', () => {
                 'getRobotFeature',
                 'getError'
             ]);
+        });
+
+        it('should not query an unverified lawn mower model', () => {
+            ctx.getPlatformType.returns('lawnMower');
+            ctx.getModel().getDeviceClass.returns('other_class');
+            queue.addInitialGetCommands();
+
+            expect(queue.entries.map(entry => entry.cmd)).to.deep.equal(['GetNetInfo']);
         });
 
         it('should add airbot commands', () => {
@@ -221,10 +230,19 @@ describe('adapterQueue.js', () => {
 
         it('should poll only the Generic status bundle for a lawn mower', () => {
             ctx.getPlatformType.returns('lawnMower');
+            ctx.getModel().getDeviceClass.returns('2i0fns');
             queue.addStandardGetCommands();
 
             expect(queue.entries.map(entry => entry.cmd)).to.deep.equal(['Generic']);
             expect(queue.entries[0].arg1).to.equal('getInfo');
+        });
+
+        it('should not poll an unverified lawn mower model', () => {
+            ctx.getPlatformType.returns('lawnMower');
+            ctx.getModel().getDeviceClass.returns('other_class');
+            queue.addStandardGetCommands();
+
+            expect(queue.entries).to.be.empty;
         });
 
         it('should add GetStationState for non-yeedi devices with air drying', () => {

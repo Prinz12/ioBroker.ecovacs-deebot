@@ -400,6 +400,15 @@ describe('adapterHelper.js', () => {
         });
     });
 
+    describe('supportsLawnMowerInfo', () => {
+        it('should accept only the verified GOAT O1200 LiDAR Pro device class', () => {
+            expect(adapterHelper.supportsLawnMowerInfo('lawnMower', '2i0fns')).to.be.true;
+            expect(adapterHelper.supportsLawnMowerInfo('goat', '2i0fns')).to.be.true;
+            expect(adapterHelper.supportsLawnMowerInfo('lawnMower', 'other_class')).to.be.false;
+            expect(adapterHelper.supportsLawnMowerInfo('950', '2i0fns')).to.be.false;
+        });
+    });
+
     describe('getCurrentDateAndTimeFormatted', () => {
         it('should return a formatted date string', () => {
             const mockAdapter = {
