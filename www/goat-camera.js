@@ -201,17 +201,17 @@
         const session = await sendTo('getGoatCameraSession', { deviceId });
         sessionId = session.sessionId;
         clientId = session.clientId;
-        diagnostics.region = session.region;
-        diagnostics.channelFingerprint = await shortFingerprint(session.channelArn);
-        diagnostics.clientFingerprint = await shortFingerprint(session.clientId);
-        diagnostics.clientIdLength = String(session.clientId || '').length;
-        publishDiagnostics();
         remoteDescriptionSet = false;
         pendingIce = [];
         offerSent = false;
         pendingLocalIce = [];
         clearTimeout(answerTimeout);
         resetDiagnostics();
+        diagnostics.region = session.region;
+        diagnostics.channelFingerprint = await shortFingerprint(session.channelArn);
+        diagnostics.clientFingerprint = await shortFingerprint(session.clientId);
+        diagnostics.clientIdLength = String(session.clientId || '').length;
+        publishDiagnostics();
         peerConnection = new RTCPeerConnection({
             iceServers: session.iceServers,
             bundlePolicy: 'max-bundle',

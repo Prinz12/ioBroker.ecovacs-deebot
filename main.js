@@ -360,6 +360,27 @@ class EcovacsDeebot extends utils.Adapter {
     }
 
     /**
+     * Preserve the account-level UCID before ecovacs-deebot exchanges it for
+     * the shorter IOT user id. The Android app sends both identifiers on the
+     * GOAT camera API; neither value is logged or persisted by the adapter.
+     * @param {Object} api - a fresh, not-yet-authenticated EcovacsAPI instance
+     */
+    captureAccountUid(api) {
+        if (!api || typeof api.completeLogin !== 'function' || api._accountUidCaptureInstalled) {
+            return;
+        }
+        const completeLogin = api.completeLogin.bind(api);
+        api.completeLogin = async (...args) => {
+            const accountUid = String(api.uid || '');
+            if (accountUid) {
+                api.accountUid = accountUid;
+            }
+            return completeLogin(...args);
+        };
+        api._accountUidCaptureInstalled = true;
+    }
+
+    /**
      * Single login path: constructs an EcoVacsAPI instance, authenticates and
      * fetches the raw device list. Callers are responsible for storing the api
      * (e.g. for token refresh) and for formatting the returned devices.
@@ -369,6 +390,7 @@ class EcovacsDeebot extends utils.Adapter {
     async authenticate({ email, password, countrycode, authDomain }) {
         const auth = await this.buildAuthParams({ password, countrycode, authDomain });
         const api = new EcoVacsAPI(auth.deviceId, auth.countryCode, auth.continent, auth.authDomainValue);
+        this.captureAccountUid(api);
         await api.connect(email, auth.passwordHash);
         const devices = /** @type {Object[]} */ (await api.devices());
         return { api, devices, auth };
@@ -637,6 +659,7 @@ class EcovacsDeebot extends utils.Adapter {
                 authDomain
             });
             const api = new EcoVacsAPI(auth.deviceId, auth.countryCode, auth.continent, auth.authDomainValue);
+            this.captureAccountUid(api);
             // Store the api eagerly: if the login triggers device verification we
             // must reuse THIS instance (it caches the account and RSA key) for
             // requestDeviceVerificationCode() / verifyDevice().

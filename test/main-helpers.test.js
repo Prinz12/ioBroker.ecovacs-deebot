@@ -143,6 +143,31 @@ describe('main.js - helper methods', () => {
         });
     });
 
+    describe('captureAccountUid', () => {
+        it('preserves the account-level id before login replaces it with the IOT id', async () => {
+            const api = {
+                uid: 'account-level-uid',
+                completeLogin: sinon.stub().callsFake(async () => {
+                    api.uid = 'iot-user-id';
+                    return 'ready';
+                })
+            };
+
+            instance.captureAccountUid(api);
+            expect(await api.completeLogin('token')).to.equal('ready');
+            expect(api.accountUid).to.equal('account-level-uid');
+            expect(api.uid).to.equal('iot-user-id');
+        });
+
+        it('installs the capture wrapper only once', () => {
+            const api = { uid: 'account-level-uid', completeLogin: sinon.stub().resolves('ready') };
+            instance.captureAccountUid(api);
+            const wrapped = api.completeLogin;
+            instance.captureAccountUid(api);
+            expect(api.completeLogin).to.equal(wrapped);
+        });
+    });
+
     describe('addToLast20Errors', () => {
         it('prepends the newest error and records timestamp/date/code/error', () => {
             const ctx = makeCtx();

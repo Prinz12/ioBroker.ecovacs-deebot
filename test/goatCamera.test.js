@@ -376,4 +376,18 @@ describe('goatCamera.js', () => {
         expect(result).to.include('X-Amz-Security-Token=SESSION');
         expect(result).to.match(/X-Amz-Signature=[0-9a-f]{64}$/);
     });
+
+    it('keeps the account UCID separate from the IOT user id', () => {
+        const { ecovacsHeaders } = loadModule({});
+        const headers = ecovacsHeaders({
+            api: { accountUid: 'account-level-ucid' },
+            vacbot: {
+                user_access_token: 'token',
+                country: 'de',
+                uid: 'iot-user-id'
+            }
+        });
+        expect(headers.ucid).to.equal('account-level-ucid');
+        expect(headers.userid).to.equal('iot-user-id');
+    });
 });
