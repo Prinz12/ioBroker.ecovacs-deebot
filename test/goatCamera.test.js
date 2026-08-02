@@ -128,6 +128,10 @@ describe('goatCamera.js', () => {
         expect(JSON.parse(axiosStub.post.firstCall.args[1])).to.deep.equal({
             ChannelName: 'goat-camera-channel'
         });
+        expect(JSON.parse(axiosStub.post.thirdCall.args[1])).to.include({
+            ClientId: 'VIEWER',
+            Service: 'TURN'
+        });
         expect(JSON.stringify(result)).not.to.include('SECRET');
         expect(JSON.stringify(result)).not.to.include('9876');
 
