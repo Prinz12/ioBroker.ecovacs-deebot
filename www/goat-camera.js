@@ -1,5 +1,5 @@
 'use strict';
-/* global window, document, location, RTCPeerConnection, RTCRtpReceiver */
+/* global window, document, location, MediaStream, RTCPeerConnection, RTCRtpReceiver */
 
 (() => {
     const params = new URLSearchParams(location.search);
@@ -28,6 +28,7 @@
     let diagnostics;
     const { encodeMessage, decodeMessage } = window.GoatCameraCodec;
     const { applyGoatVideoCodecPreferences } = window.GoatCameraCodecs;
+    const { attachRemoteTracks } = window.GoatCameraMedia;
 
     function resetDiagnostics() {
         diagnostics = {
@@ -241,14 +242,26 @@
         });
         peerConnection.addEventListener('track', event => {
             diagnostics.tracks++;
+            const attached = attachRemoteTracks(video, event, MediaStream);
+            diagnostics.streamAudioTracks = attached.audioTracks;
+            diagnostics.streamVideoTracks = attached.videoTracks;
             publishDiagnostics();
-            if (!video.srcObject) video.srcObject = event.streams[0];
+            if (attached.videoTracks && peerConnection?.connectionState === 'connected') {
+                setStatus('Livebild verbunden');
+            }
+            video.play().catch(error => {
+                diagnostics.playbackError = error?.name || 'playback-failed';
+                publishDiagnostics();
+            });
         });
         peerConnection.addEventListener('connectionstatechange', () => {
             const state = peerConnection?.connectionState;
             diagnostics.connectionState = state || 'closed';
             publishDiagnostics();
-            if (state === 'connected') setStatus('Livebild verbunden');
+            if (state === 'connected') {
+                setStatus(diagnostics.streamVideoTracks ? 'Livebild verbunden' :
+                    'WebRTC verbunden · warte auf Videospur');
+            }
             else if (['failed', 'disconnected'].includes(state)) setStatus(`WebRTC: ${state}`);
         });
         peerConnection.addEventListener('iceconnectionstatechange', () => {
