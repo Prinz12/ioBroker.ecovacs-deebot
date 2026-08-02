@@ -107,10 +107,9 @@ describe('goatCamera.js', () => {
         expect(result.iceServers).to.have.length(2);
         expect(result).not.to.have.any.keys('credentials', 'accessKeyId', 'secretAccessKey', 'sessionToken', 'pin');
         const startOptions = axiosStub.get.firstCall.args[1];
-        expect(startOptions.params.pwd).to.equal(
-            'f7e7fbd1a38fe96df90bde06055f81705bfd27f9fa76aaa01143459c9ac42916'
-        );
-        expect(startOptions.params.pwd).not.to.equal('9876');
+        expect(axiosStub.get.firstCall.args[0]).to.include('/appsvr/akvs/start_watch');
+        expect(axiosStub.get.firstCall.args[0]).not.to.include('/start_watch/v2');
+        expect(startOptions.params).not.to.have.property('pwd');
         expect(startOptions.params.did).to.equal(ctx.did);
         expect(startOptions.headers.Authorization).to.equal('Bearer ecovacs-token');
         expect(axiosStub.post.firstCall.args[0]).to.include('/describeSignalingChannel');
