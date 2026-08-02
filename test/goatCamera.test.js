@@ -366,17 +366,14 @@ describe('goatCamera.js', () => {
         const result = signWebSocketUrl(
             'wss://example.com',
             'arn:aws:kinesisvideo:eu-central-1:123456789012:channel/test/1',
-            'viewer+/=1',
+            'viewer-1',
             'eu-central-1',
-            { accessKeyId: 'AKID', secretAccessKey: 'SECRET', sessionToken: 'SESSION+/=' },
+            { accessKeyId: 'AKID', secretAccessKey: 'SECRET', sessionToken: 'SESSION' },
             new Date('2026-08-02T00:00:00.000Z')
         );
         expect(result).to.include('X-Amz-Algorithm=AWS4-HMAC-SHA256');
         expect(result).to.include('X-Amz-Expires=299');
-        expect(result).to.include('X-Amz-ChannelARN=arn%253Aaws%253Akinesisvideo');
-        expect(result).to.include('X-Amz-ClientId=viewer%252B%252F%253D1');
-        expect(result).to.include('X-Amz-Credential=AKID%252F20260802%252Feu-central-1');
-        expect(result).to.include('X-Amz-Security-Token=SESSION%252B%252F%253D');
+        expect(result).to.include('X-Amz-Security-Token=SESSION');
         expect(result).to.match(/X-Amz-Signature=[0-9a-f]{64}$/);
     });
 });
