@@ -16,6 +16,7 @@
     const socket = window.io();
     let webSocket;
     let peerConnection;
+    let silentAudio;
     let sessionId;
     let clientId;
     let remoteDescriptionSet = false;
@@ -96,6 +97,30 @@
         }));
     }
 
+    function createSilentAudioStream() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) throw new Error('Dieser Browser kann keinen stummen WebRTC-Audiokanal erzeugen');
+        const context = new AudioContext();
+        const destination = context.createMediaStreamDestination();
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        gain.gain.value = 0;
+        oscillator.connect(gain);
+        gain.connect(destination);
+        oscillator.start();
+        const track = destination.stream.getAudioTracks()[0];
+        track.enabled = false;
+        return { context, oscillator, stream: destination.stream, track };
+    }
+
+    async function closeSilentAudio() {
+        if (!silentAudio) return;
+        silentAudio.track.stop();
+        silentAudio.oscillator.stop();
+        await silentAudio.context.close().catch(() => {});
+        silentAudio = undefined;
+    }
+
     async function handleSignal(event) {
         let message;
         try {
@@ -149,8 +174,11 @@
             rtcpMuxPolicy: 'require'
         });
         // Keep the media order used by ECOVACS' Android WebRTC client. It adds
-        // the muted audio sender first and requests the remote video second.
-        peerConnection.addTransceiver('audio', { direction: 'sendrecv' });
+        // a real but disabled local audio track before requesting remote video.
+        // Generate silence locally to reproduce that SDP shape without asking
+        // for microphone permission or transmitting microphone audio.
+        silentAudio = createSilentAudioStream();
+        peerConnection.addTrack(silentAudio.track, silentAudio.stream);
         peerConnection.addTransceiver('video', { direction: 'recvonly' });
         peerConnection.addEventListener('icecandidate', event => {
             if (event.candidate) {
@@ -217,6 +245,7 @@
         webSocket = undefined;
         peerConnection?.close();
         peerConnection = undefined;
+        await closeSilentAudio();
         video.srcObject = null;
         const closingId = sessionId;
         sessionId = undefined;
@@ -258,5 +287,6 @@
         }
         webSocket?.close();
         peerConnection?.close();
+        closeSilentAudio().catch(() => {});
     });
 })();
