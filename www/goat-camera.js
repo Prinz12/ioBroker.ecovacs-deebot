@@ -21,6 +21,8 @@
     let clientId;
     let remoteDescriptionSet = false;
     let pendingIce = [];
+    let offerSent = false;
+    let pendingLocalIce = [];
     let adapterCheckInFlight;
     let answerTimeout;
     let diagnostics;
@@ -97,6 +99,14 @@
         }));
     }
 
+    function sendLocalIce(candidate) {
+        sendSignal('ICE_CANDIDATE', {
+            candidate: candidate.candidate || '',
+            sdpMid: candidate.sdpMid || '',
+            sdpMLineIndex: candidate.sdpMLineIndex
+        });
+    }
+
     function createSilentAudioStream() {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) throw new Error('Dieser Browser kann keinen stummen WebRTC-Audiokanal erzeugen');
@@ -166,6 +176,8 @@
         clientId = session.clientId;
         remoteDescriptionSet = false;
         pendingIce = [];
+        offerSent = false;
+        pendingLocalIce = [];
         clearTimeout(answerTimeout);
         resetDiagnostics();
         peerConnection = new RTCPeerConnection({
@@ -184,7 +196,8 @@
             if (event.candidate) {
                 diagnostics.localCandidates++;
                 publishDiagnostics();
-                sendSignal('ICE_CANDIDATE', event.candidate.toJSON());
+                if (offerSent) sendLocalIce(event.candidate);
+                else pendingLocalIce.push(event.candidate);
             }
         });
         peerConnection.addEventListener('track', event => {
@@ -225,6 +238,9 @@
         const offer = await peerConnection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
         await peerConnection.setLocalDescription(offer);
         sendSignal('SDP_OFFER', peerConnection.localDescription.toJSON());
+        offerSent = true;
+        for (const candidate of pendingLocalIce) sendLocalIce(candidate);
+        pendingLocalIce = [];
         answerTimeout = setTimeout(() => {
             if (sessionId && !diagnostics.answerReceived) {
                 const received = Object.values(diagnostics.messages).reduce((sum, count) => sum + count, 0);
@@ -252,6 +268,8 @@
         clientId = undefined;
         remoteDescriptionSet = false;
         pendingIce = [];
+        offerSent = false;
+        pendingLocalIce = [];
         if (closingId) {
             try { await sendTo('closeGoatCameraSession', { sessionId: closingId }); } catch { /* expires server-side */ }
         }
