@@ -131,6 +131,53 @@ describe('goatCamera.js', () => {
         expect(axiosStub.get.called).to.be.false;
     });
 
+    it('reports the numeric ECOVACS code for a rejected PIN without exposing secrets', async () => {
+        const axiosStub = {
+            get: sinon.stub().resolves({ data: { ret: 'fail', code: 30010 } }),
+            post: sinon.stub()
+        };
+        const { GoatCameraManager } = loadModule(axiosStub);
+        const { adapter, ctx } = createAdapter();
+        const manager = new GoatCameraManager(adapter);
+
+        let error;
+        try {
+            await manager.requestSession(ctx.did);
+        } catch (caught) {
+            error = caught;
+        }
+
+        expect(error.message).to.equal(
+            'The configured GOAT Video Manager PIN was rejected (ECOVACS code 30010)'
+        );
+        expect(error.message).not.to.include('9876');
+        expect(error.message).not.to.include('ecovacs-token');
+        expect(axiosStub.post.called).to.be.false;
+    });
+
+    it('distinguishes the too-many-failed-PIN-attempts response', async () => {
+        const axiosStub = {
+            get: sinon.stub().resolves({ data: { ret: 'fail', code: 30014 } }),
+            post: sinon.stub()
+        };
+        const { GoatCameraManager } = loadModule(axiosStub);
+        const { adapter, ctx } = createAdapter();
+        const manager = new GoatCameraManager(adapter);
+
+        let error;
+        try {
+            await manager.requestSession(ctx.did);
+        } catch (caught) {
+            error = caught;
+        }
+
+        expect(error.message).to.equal(
+            'The GOAT Video Manager PIN was rejected after too many failed attempts (ECOVACS code 30014)'
+        );
+        expect(error.message).not.to.include('9876');
+        expect(axiosStub.post.called).to.be.false;
+    });
+
     it('closes the ECOVACS watch session when AWS setup fails', async () => {
         const axiosStub = {
             get: sinon.stub(),
