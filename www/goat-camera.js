@@ -1,5 +1,5 @@
 'use strict';
-/* global window, document, location, RTCPeerConnection */
+/* global window, document, location, RTCPeerConnection, RTCRtpReceiver */
 
 (() => {
     const params = new URLSearchParams(location.search);
@@ -27,6 +27,7 @@
     let answerTimeout;
     let diagnostics;
     const { encodeMessage, decodeMessage } = window.GoatCameraCodec;
+    const { applyGoatVideoCodecPreferences } = window.GoatCameraCodecs;
 
     function resetDiagnostics() {
         diagnostics = {
@@ -223,7 +224,13 @@
         // for microphone permission or transmitting microphone audio.
         silentAudio = createSilentAudioStream();
         peerConnection.addTrack(silentAudio.track, silentAudio.stream);
-        peerConnection.addTransceiver('video', { direction: 'recvonly' });
+        const videoTransceiver = peerConnection.addTransceiver('video', { direction: 'recvonly' });
+        const videoCodecs = applyGoatVideoCodecPreferences(videoTransceiver, RTCRtpReceiver);
+        diagnostics.videoCodecs = videoCodecs.map(codec => ({
+            mimeType: codec.mimeType,
+            fmtp: codec.sdpFmtpLine || ''
+        }));
+        publishDiagnostics();
         peerConnection.addEventListener('icecandidate', event => {
             if (event.candidate) {
                 diagnostics.localCandidates++;
