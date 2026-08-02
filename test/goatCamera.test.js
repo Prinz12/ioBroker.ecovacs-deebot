@@ -82,15 +82,18 @@ describe('goatCamera.js', () => {
                 SessionToken: 'SESSION'
             },
             region: 'eu-central-1',
-            channel: 'arn:aws:kinesisvideo:eu-central-1:123456789012:channel/test/1',
+            channel: 'goat-camera-channel',
             client_id: 'viewer-1',
             session: 'ecovacs-session'
         } });
-        axiosStub.post.onFirstCall().resolves({ data: { ResourceEndpointList: [
+        axiosStub.post.onFirstCall().resolves({ data: { ChannelInfo: {
+            ChannelARN: 'arn:aws:kinesisvideo:eu-central-1:123456789012:channel/test/1'
+        } } });
+        axiosStub.post.onSecondCall().resolves({ data: { ResourceEndpointList: [
             { Protocol: 'WSS', ResourceEndpoint: 'wss://example.kinesisvideo.eu-central-1.amazonaws.com' },
             { Protocol: 'HTTPS', ResourceEndpoint: 'https://example.kinesisvideo.eu-central-1.amazonaws.com' }
         ] } });
-        axiosStub.post.onSecondCall().resolves({ data: { IceServerList: [{
+        axiosStub.post.onThirdCall().resolves({ data: { IceServerList: [{
             Uris: ['turn:example:443'], Username: 'turn-user', Password: 'turn-password'
         }] } });
         axiosStub.get.onSecondCall().resolves({ data: { ret: 'ok' } });
@@ -110,6 +113,10 @@ describe('goatCamera.js', () => {
         expect(startOptions.params.pwd).not.to.equal('9876');
         expect(startOptions.params.did).to.equal(ctx.did);
         expect(startOptions.headers.Authorization).to.equal('Bearer ecovacs-token');
+        expect(axiosStub.post.firstCall.args[0]).to.include('/describeSignalingChannel');
+        expect(JSON.parse(axiosStub.post.firstCall.args[1])).to.deep.equal({
+            ChannelName: 'goat-camera-channel'
+        });
         expect(JSON.stringify(result)).not.to.include('SECRET');
         expect(JSON.stringify(result)).not.to.include('9876');
 
