@@ -14,6 +14,9 @@ function loadModule(axiosStub) {
         },
         './adapterHelper': {
             supportsLawnMowerControl: () => true
+        },
+        './adapterCommands': {
+            ensureGenericCommandCompatibility: sinon.stub()
         }
     });
 }
@@ -37,7 +40,8 @@ function createAdapter(pin = '9876') {
             uid: 'user-id',
             user_access_token: 'ecovacs-token',
             country: 'de',
-            continent: 'eu'
+            continent: 'eu',
+            runAsync: sinon.stub().resolves({ ret: 'ok' })
         }
     };
     return {
@@ -108,8 +112,16 @@ describe('goatCamera.js', () => {
         expect(result).not.to.have.any.keys('credentials', 'accessKeyId', 'secretAccessKey', 'sessionToken', 'pin');
         const startOptions = axiosStub.get.firstCall.args[1];
         expect(axiosStub.get.firstCall.args[0]).to.include('/appsvr/akvs/start_watch/v2');
-        expect(startOptions.params.pwd).to.equal('825662ee57fae98e3f5b7a2c02b07cac');
+        expect(startOptions.params.pwd).to.equal(
+            'f7e7fbd1a38fe96df90bde06055f81705bfd27f9fa76aaa01143459c9ac42916'
+        );
         expect(startOptions.params.pwd).not.to.equal('9876');
+        expect(ctx.vacbot.runAsync.calledOnce).to.be.true;
+        expect(ctx.vacbot.runAsync.firstCall.args.slice(0, 3)).to.deep.equal([
+            'Generic',
+            'setPIN',
+            { action: 'verify', pwd: startOptions.params.pwd }
+        ]);
         expect(startOptions.params.did).to.equal(ctx.did);
         expect(startOptions.headers.Authorization).to.equal('Bearer ecovacs-token');
         expect(axiosStub.post.firstCall.args[0]).to.include('/describeSignalingChannel');
@@ -138,6 +150,26 @@ describe('goatCamera.js', () => {
         expect(error).to.be.instanceOf(Error);
         expect(error.message).to.include('four-digit');
         expect(axiosStub.get.called).to.be.false;
+    });
+
+    it('does not start the cloud camera session when GOAT PIN verification fails', async () => {
+        const axiosStub = { get: sinon.stub(), post: sinon.stub() };
+        const { GoatCameraManager } = loadModule(axiosStub);
+        const { adapter, ctx } = createAdapter();
+        ctx.vacbot.runAsync.rejects(Object.assign(new Error('device timeout'), { code: 'ETIMEDOUT' }));
+        const manager = new GoatCameraManager(adapter);
+
+        let error;
+        try {
+            await manager.requestSession(ctx.did);
+        } catch (caught) {
+            error = caught;
+        }
+
+        expect(error.message).to.equal('GOAT PIN verification: timeout after 15000 ms');
+        expect(error.message).not.to.include('9876');
+        expect(axiosStub.get.called).to.be.false;
+        expect(axiosStub.post.called).to.be.false;
     });
 
     it('reports the numeric ECOVACS code for a rejected PIN without exposing secrets', async () => {
