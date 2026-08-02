@@ -161,13 +161,74 @@ describe('goatCamera.js', () => {
         } catch (caught) {
             error = caught;
         }
-        expect(error.message).to.equal('AWS unavailable');
+        expect(error.message).to.equal('AWS signaling endpoint: request failed');
         expect(axiosStub.get.callCount).to.equal(2);
         expect(axiosStub.get.secondCall.args[0]).to.include('/appsvr/akvs/end_watch');
         expect(axiosStub.get.secondCall.args[1].params).to.include({
             sid: 'ecovacs-session',
             client_id: 'viewer-1'
         });
+    });
+
+    it('identifies an ECOVACS start_watch timeout without exposing request secrets', async () => {
+        const timeout = Object.assign(new Error('timeout of 15000ms exceeded'), { code: 'ECONNABORTED' });
+        const axiosStub = { get: sinon.stub().rejects(timeout), post: sinon.stub() };
+        const { GoatCameraManager } = loadModule(axiosStub);
+        const { adapter, ctx } = createAdapter();
+        const manager = new GoatCameraManager(adapter);
+
+        let error;
+        try {
+            await manager.requestSession(ctx.did);
+        } catch (caught) {
+            error = caught;
+        }
+
+        expect(error.message).to.equal('ECOVACS start_watch: timeout after 15000 ms');
+        expect(error.message).not.to.include('9876');
+        expect(error.message).not.to.include('ecovacs-token');
+        expect(adapter.log.info.calledWith('GOAT camera session stage: ECOVACS start_watch')).to.be.true;
+        expect(axiosStub.post.called).to.be.false;
+    });
+
+    it('identifies an AWS ICE configuration timeout and closes the ECOVACS watch session', async () => {
+        const axiosStub = { get: sinon.stub(), post: sinon.stub() };
+        axiosStub.get.onFirstCall().resolves({ data: {
+            ret: 'ok',
+            credentials: {
+                AccessKeyId: 'AKID',
+                SecretAccessKey: 'SECRET',
+                SessionToken: 'SESSION'
+            },
+            region: 'eu-central-1',
+            channel: 'arn:aws:kinesisvideo:eu-central-1:123456789012:channel/test/1',
+            client_id: 'viewer-1',
+            session: 'ecovacs-session'
+        } });
+        axiosStub.post.onFirstCall().resolves({ data: { ResourceEndpointList: [
+            { Protocol: 'WSS', ResourceEndpoint: 'wss://example.kinesisvideo.eu-central-1.amazonaws.com' },
+            { Protocol: 'HTTPS', ResourceEndpoint: 'https://example.kinesisvideo.eu-central-1.amazonaws.com' }
+        ] } });
+        axiosStub.post.onSecondCall().rejects(
+            Object.assign(new Error('timeout of 15000ms exceeded'), { code: 'ECONNABORTED' })
+        );
+        axiosStub.get.onSecondCall().resolves({ data: { ret: 'ok' } });
+
+        const { GoatCameraManager } = loadModule(axiosStub);
+        const { adapter, ctx } = createAdapter();
+        const manager = new GoatCameraManager(adapter);
+
+        let error;
+        try {
+            await manager.requestSession(ctx.did);
+        } catch (caught) {
+            error = caught;
+        }
+
+        expect(error.message).to.equal('AWS ICE configuration: timeout after 15000 ms');
+        expect(axiosStub.get.secondCall.args[0]).to.include('/appsvr/akvs/end_watch');
+        expect(adapter.log.info.calledWith('GOAT camera session stage: AWS signaling endpoint')).to.be.true;
+        expect(adapter.log.info.calledWith('GOAT camera session stage: AWS ICE configuration')).to.be.true;
     });
 
     it('creates a deterministic AWS WebSocket signature shape', () => {
