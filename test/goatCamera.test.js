@@ -172,6 +172,34 @@ describe('goatCamera.js', () => {
         expect(axiosStub.post.called).to.be.false;
     });
 
+    it('rejects a non-zero device response from GOAT PIN verification', async () => {
+        const axiosStub = { get: sinon.stub(), post: sinon.stub() };
+        const { GoatCameraManager } = loadModule(axiosStub);
+        const { adapter, ctx } = createAdapter();
+        ctx.vacbot.ecovacs = {
+            _resolveImmediatePayload(command, responseData) {
+                return responseData?.resp?.body?.data;
+            }
+        };
+        ctx.vacbot.runAsync.callsFake(async () => ctx.vacbot.ecovacs._resolveImmediatePayload(
+            { name: 'setPIN' },
+            { resp: { body: { code: 30010, msg: 'rejected' } } }
+        ));
+        const manager = new GoatCameraManager(adapter);
+
+        let error;
+        try {
+            await manager.requestSession(ctx.did);
+        } catch (caught) {
+            error = caught;
+        }
+
+        expect(error.message).to.equal('GOAT PIN verification failed (device code 30010)');
+        expect(error.message).not.to.include('9876');
+        expect(axiosStub.get.called).to.be.false;
+        expect(axiosStub.post.called).to.be.false;
+    });
+
     it('reports the numeric ECOVACS code for a rejected PIN without exposing secrets', async () => {
         const axiosStub = {
             get: sinon.stub().resolves({ data: { ret: 'fail', code: 30010 } }),
