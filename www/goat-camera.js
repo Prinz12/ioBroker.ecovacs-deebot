@@ -18,7 +18,6 @@
     let peerConnection;
     let silentAudio;
     let sessionId;
-    let clientId;
     let remoteDescriptionSet = false;
     let pendingIce = [];
     let offerSent = false;
@@ -89,13 +88,12 @@
 
     function sendSignal(action, payload) {
         if (webSocket?.readyState !== WebSocket.OPEN) return;
-        const rawPayload = JSON.stringify(payload);
+        const urlSafePayload = encodeMessage(payload);
+        const standardPayload = urlSafePayload.replace(/-/g, '+').replace(/_/g, '/')
+            .padEnd(Math.ceil(urlSafePayload.length / 4) * 4, '=');
         webSocket.send(JSON.stringify({
             action,
-            recipientClientId: '',
-            senderClientId: clientId || '',
-            messagePayload: encodeMessage(payload),
-            sdpPayload: action === 'SDP_OFFER' ? rawPayload : ''
+            messagePayload: standardPayload
         }));
     }
 
@@ -173,7 +171,6 @@
         setStatus('Sichere Kamerasitzung wird angefordert …');
         const session = await sendTo('getGoatCameraSession', { deviceId });
         sessionId = session.sessionId;
-        clientId = session.clientId;
         remoteDescriptionSet = false;
         pendingIce = [];
         offerSent = false;
@@ -265,7 +262,6 @@
         video.srcObject = null;
         const closingId = sessionId;
         sessionId = undefined;
-        clientId = undefined;
         remoteDescriptionSet = false;
         pendingIce = [];
         offerSent = false;
