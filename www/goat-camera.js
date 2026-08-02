@@ -18,6 +18,7 @@
     let peerConnection;
     let silentAudio;
     let sessionId;
+    let clientId;
     let remoteDescriptionSet = false;
     let pendingIce = [];
     let offerSent = false;
@@ -88,13 +89,32 @@
 
     function sendSignal(action, payload) {
         if (webSocket?.readyState !== WebSocket.OPEN) return;
-        const urlSafePayload = encodeMessage(payload);
-        const standardPayload = urlSafePayload.replace(/-/g, '+').replace(/_/g, '/')
-            .padEnd(Math.ceil(urlSafePayload.length / 4) * 4, '=');
+        const rawPayload = JSON.stringify(payload);
         webSocket.send(JSON.stringify({
             action,
-            messagePayload: standardPayload
+            recipientClientId: '',
+            senderClientId: clientId || '',
+            messagePayload: encodeMessage(payload),
+            sdpPayload: action === 'SDP_OFFER' ? rawPayload : ''
         }));
+    }
+
+    function summarizeOffer(sdp) {
+        const sections = String(sdp || '').split(/\r?\nm=/);
+        const media = sections.slice(1).map(section => section.split(/\s/u, 1)[0]);
+        const audio = sections.find(section => section.startsWith('audio ')) || '';
+        const videoSection = sections.find(section => section.startsWith('video ')) || '';
+        const direction = section => (section.match(/(?:^|\r?\n)a=(sendrecv|recvonly|sendonly|inactive)(?:\r?\n|$)/u) || [])[1] || '';
+        const codecs = Array.from(videoSection.matchAll(/(?:^|\r?\n)a=rtpmap:\d+ ([^/\r\n]+)/gu), match => match[1]);
+        const h264Profiles = Array.from(videoSection.matchAll(/profile-level-id=([0-9a-f]+)/giu), match => match[1]);
+        return {
+            offerMedia: media,
+            offerAudioDirection: direction(audio),
+            offerVideoDirection: direction(videoSection),
+            offerVideoCodecs: [...new Set(codecs)],
+            offerH264Profiles: [...new Set(h264Profiles)],
+            offerTcpCandidates: (String(sdp || '').match(/a=candidate:[^\r\n]+ tcp /giu) || []).length
+        };
     }
 
     function sendLocalIce(candidate) {
@@ -171,6 +191,7 @@
         setStatus('Sichere Kamerasitzung wird angefordert …');
         const session = await sendTo('getGoatCameraSession', { deviceId });
         sessionId = session.sessionId;
+        clientId = session.clientId;
         remoteDescriptionSet = false;
         pendingIce = [];
         offerSent = false;
@@ -234,6 +255,8 @@
         publishDiagnostics();
         const offer = await peerConnection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
         await peerConnection.setLocalDescription(offer);
+        Object.assign(diagnostics, summarizeOffer(peerConnection.localDescription.sdp));
+        publishDiagnostics();
         sendSignal('SDP_OFFER', peerConnection.localDescription.toJSON());
         offerSent = true;
         for (const candidate of pendingLocalIce) sendLocalIce(candidate);
@@ -262,6 +285,7 @@
         video.srcObject = null;
         const closingId = sessionId;
         sessionId = undefined;
+        clientId = undefined;
         remoteDescriptionSet = false;
         pendingIce = [];
         offerSent = false;
