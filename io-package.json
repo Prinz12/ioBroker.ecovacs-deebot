@@ -141,6 +141,7 @@
   "native": {
     "email": "",
     "password": "",
+    "goatVideoPin": "",
     "countrycode": "de",
     "authDomain": "",
     "pollingInterval": 120000,
@@ -293,9 +294,11 @@
     }
   ],
   "encryptedNative": [
-    "password"
+    "password",
+    "goatVideoPin"
   ],
   "protectedNative": [
-    "password"
+    "password",
+    "goatVideoPin"
   ]
 }

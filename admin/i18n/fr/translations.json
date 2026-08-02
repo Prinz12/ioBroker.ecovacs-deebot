@@ -31,6 +31,8 @@
   "languageForSpotAreaNames": "Langue des étiquettes de zone de spot (uniquement si les étiquettes sont prises en charge par le modèle)",
   "onlyCreate": "Créer uniquement les nouveaux",
   "password": "Mot de passe",
+  "goatVideoPin": "PIN du gestionnaire vidéo GOAT",
+  "goatVideoPin_help": "PIN à quatre chiffres du gestionnaire vidéo ECOVACS. Il est stocké chiffré et jamais publié comme état.",
   "pause": "pause",
   "pollingInterval": "Intervalle d'interrogation (secondes)",
   "pre-selection": "présélection",

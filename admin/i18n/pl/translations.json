@@ -31,6 +31,8 @@
   "languageForSpotAreaNames": "Język etykiet obszarów punktowych (tylko jeśli model obsługuje etykiety)",
   "onlyCreate": "Tylko utwórz nowe",
   "password": "Hasło",
+  "goatVideoPin": "PIN menedżera wideo GOAT",
+  "goatVideoPin_help": "Czterocyfrowy PIN z menedżera wideo ECOVACS. Jest przechowywany w postaci zaszyfrowanej i nigdy nie jest publikowany jako stan.",
   "pause": "pauza",
   "pollingInterval": "Interwał odpytywania (sekundy)",
   "pre-selection": "preselekcja",

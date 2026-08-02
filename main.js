@@ -30,6 +30,7 @@ const { DeviceVerificationRequired, InvalidVerificationCode } = /** @type {any} 
 const mapObjects = require('./lib/mapObjects');
 const eventHandlers = require('./lib/eventHandlers');
 const mapHelper = require('./lib/mapHelper');
+const { GoatCameraManager } = require('./lib/goatCamera');
 
 /**
  * Maps the dotted feature.* config keys used throughout the adapter to the
@@ -122,6 +123,7 @@ class EcovacsDeebot extends utils.Adapter {
         this._verificationAuth = null;
         // Guards against concurrent verifyDevice submissions.
         this._verifying = false;
+        this.cameraManager = new GoatCameraManager(this);
     }
 
     async onReady() {
@@ -157,6 +159,8 @@ class EcovacsDeebot extends utils.Adapter {
 
     onUnload(callback) {
         try {
+            this.cameraManager.closeAll().catch(error =>
+                this.log.debug(`Could not close every GOAT camera session during unload: ${error.message}`));
             this.disableTokenRefresh(this.api);
             this.api = null;
             for (const ctx of this.deviceContexts.values()) {
@@ -247,6 +251,22 @@ class EcovacsDeebot extends utils.Adapter {
             } catch (error) {
                 this.log.error('Error in getDeviceList: ' + error.message);
                 this.sendTo(obj.from, obj.command, [], obj.callback);
+            }
+        } else if (obj && obj.command === 'getGoatCameraSession') {
+            try {
+                const result = await this.cameraManager.requestSession(obj.message?.deviceId);
+                this.sendTo(obj.from, obj.command, result, obj.callback);
+            } catch (error) {
+                this.log.warn(`GOAT camera session request failed: ${error.message}`);
+                this.sendTo(obj.from, obj.command, { error: error.message }, obj.callback);
+            }
+        } else if (obj && obj.command === 'closeGoatCameraSession') {
+            try {
+                const closed = await this.cameraManager.closeSession(obj.message?.sessionId);
+                this.sendTo(obj.from, obj.command, { closed }, obj.callback);
+            } catch (error) {
+                this.log.warn(`GOAT camera session close failed: ${error.message}`);
+                this.sendTo(obj.from, obj.command, { error: error.message }, obj.callback);
             }
         }
     }

@@ -31,6 +31,8 @@
   "languageForSpotAreaNames": "Idioma para etiquetas de áreas puntuales (solo si el modelo admite etiquetas)",
   "onlyCreate": "Solo crear nuevos",
   "password": "Contraseña",
+  "goatVideoPin": "PIN del administrador de vídeo GOAT",
+  "goatVideoPin_help": "PIN de cuatro dígitos del administrador de vídeo de ECOVACS. Se guarda cifrado y nunca se publica como estado.",
   "pause": "pausa",
   "pollingInterval": "Intervalo de sondeo (segundos)",
   "pre-selection": "preselección",

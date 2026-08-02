@@ -31,6 +31,8 @@
   "languageForSpotAreaNames": "Idioma para rótulos de áreas pontuais (somente se os rótulos forem suportados pelo modelo)",
   "onlyCreate": "Apenas criar novos",
   "password": "Senha",
+  "goatVideoPin": "PIN do gestor de vídeo GOAT",
+  "goatVideoPin_help": "PIN de quatro dígitos do gestor de vídeo ECOVACS. É guardado de forma encriptada e nunca publicado como estado.",
   "pause": "pausa",
   "pollingInterval": "Intervalo de pesquisa (segundos)",
   "pre-selection": "pré-seleção",

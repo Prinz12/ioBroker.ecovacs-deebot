@@ -31,6 +31,8 @@
   "languageForSpotAreaNames": "Язык меток областей пятна",
   "onlyCreate": "Только создавать новые",
   "password": "Пароль",
+  "goatVideoPin": "PIN видеоменеджера GOAT",
+  "goatVideoPin_help": "Четырёхзначный PIN из видеоменеджера ECOVACS. Он хранится в зашифрованном виде и не публикуется как состояние.",
   "pause": "пауза",
   "pollingInterval": "Интервал опроса (секунды)",
   "pre-selection": "предварительный отбор",

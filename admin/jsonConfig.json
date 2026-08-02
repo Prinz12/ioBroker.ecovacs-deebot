@@ -22,6 +22,17 @@
           "md": 6,
           "lg": 6
         },
+        "goatVideoPin": {
+          "newLine": true,
+          "type": "password",
+          "label": "goatVideoPin",
+          "help": "goatVideoPin_help",
+          "repeat": false,
+          "visible": true,
+          "sm": 12,
+          "md": 6,
+          "lg": 6
+        },
         "countrycode": {
           "newLine": true,
           "type": "select",

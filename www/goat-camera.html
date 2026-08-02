@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>ECOVACS GOAT Kamera</title>
+    <style>
+        :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #101419; color: #f4f7fa; }
+        main { width: min(100%, 960px); padding: 16px; }
+        .frame { position: relative; overflow: hidden; border-radius: 14px; background: #050607; aspect-ratio: 16/9; box-shadow: 0 12px 36px #0008; }
+        video { width: 100%; height: 100%; object-fit: contain; background: #050607; }
+        .cover { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; background: #101419e8; }
+        .cover[hidden] { display: none; }
+        button { border: 0; border-radius: 999px; padding: 12px 20px; font: inherit; font-weight: 650; cursor: pointer; background: #74c365; color: #0c2408; }
+        button.secondary { background: #29323c; color: #f4f7fa; }
+        button:disabled { cursor: wait; opacity: .55; }
+        .toolbar { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+        #status { flex: 1; min-width: 220px; color: #bac5cf; font-size: .92rem; }
+        .privacy { margin: 12px 2px 0; color: #8f9aa5; font-size: .82rem; }
+    </style>
+</head>
+<body>
+<main>
+    <div class="frame">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="cover" id="cover">
+            <div>
+                <p>Der Kamerastream startet erst nach einem bewussten Klick.</p>
+                <button id="start">Kamera öffnen</button>
+            </div>
+        </div>
+    </div>
+    <div class="toolbar">
+        <button class="secondary" id="sound" disabled>Ton einschalten</button>
+        <button class="secondary" id="stop" disabled>Kamera schließen</button>
+        <span id="status">Bereit</span>
+    </div>
+    <p class="privacy">Video-PIN, ECOVACS-Token und das rohe AWS-Schlüsselpaar bleiben im Adapter. Der Browser erhält nur kurzlebige, signierte Sitzungsdaten. Die Sitzung endet automatisch nach fünf Minuten.</p>
+</main>
+<script src="/socket.io/socket.io.js"></script>
+<script src="goat-camera.js"></script>
+</body>
+</html>

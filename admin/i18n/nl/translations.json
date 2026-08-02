@@ -31,6 +31,8 @@
   "languageForSpotAreaNames": "Taal voor spotgebiedlabels (alleen als labels door het model worden ondersteund)",
   "onlyCreate": "Alleen nieuwe maken",
   "password": "Wachtwoord",
+  "goatVideoPin": "GOAT Video Manager-pincode",
+  "goatVideoPin_help": "Viercijferige pincode uit ECOVACS Video Manager. Deze wordt versleuteld opgeslagen en nooit als status gepubliceerd.",
   "pause": "pauze",
   "pollingInterval": "Polling-interval (seconden)",
   "pre-selection": "voorselectie",

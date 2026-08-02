@@ -31,6 +31,8 @@
   "languageForSpotAreaNames": "点区域标签的语言（仅当模型支持标签时）",
   "onlyCreate": "仅创建新的",
   "password": "密码",
+  "goatVideoPin": "GOAT 视频管理器 PIN",
+  "goatVideoPin_help": "ECOVACS 视频管理器中的四位 PIN。它会加密存储，并且绝不会作为状态公开。",
   "pause": "暂停",
   "pollingInterval": "轮询间隔（秒）",
   "pre-selection": "预选",

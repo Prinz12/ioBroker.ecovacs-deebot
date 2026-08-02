@@ -31,6 +31,8 @@
   "languageForSpotAreaNames": "Sprache für die Beschriftung der Bereiche (nur wenn Labels vom Modell unterstützt werden)",
   "onlyCreate": "Nur neue erstellen",
   "password": "Passwort",
+  "goatVideoPin": "GOAT Video-Manager-PIN",
+  "goatVideoPin_help": "Vierstellige PIN aus dem Video-Manager der ECOVACS-App. Sie wird verschlüsselt gespeichert und nie als Datenpunkt ausgegeben.",
   "pause": "Pause",
   "pollingInterval": "Abfrage-Intervall (Sekunden)",
   "pre-selection": "Vorauswahl verwenden",
