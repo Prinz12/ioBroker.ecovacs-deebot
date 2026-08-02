@@ -254,7 +254,7 @@ describe('goatCamera.js', () => {
         expect(axiosStub.get.secondCall.args[0]).to.include('/appsvr/akvs/end_watch');
         expect(axiosStub.get.secondCall.args[1].params).to.include({
             sid: 'ecovacs-session',
-            client_id: 'viewer-1'
+            clientId: 'viewer-1'
         });
     });
 

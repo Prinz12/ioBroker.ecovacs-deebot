@@ -150,11 +150,15 @@
         pendingIce = [];
         clearTimeout(answerTimeout);
         resetDiagnostics();
-        peerConnection = new RTCPeerConnection({ iceServers: session.iceServers });
-        peerConnection.addTransceiver('video', { direction: 'recvonly' });
-        // The official ECOVACS viewer offers a bidirectional audio section even
-        // when the microphone is muted. No local track is attached here.
+        peerConnection = new RTCPeerConnection({
+            iceServers: session.iceServers,
+            bundlePolicy: 'max-bundle',
+            rtcpMuxPolicy: 'require'
+        });
+        // Keep the media order used by ECOVACS' Android WebRTC client. It adds
+        // the muted audio sender first and requests the remote video second.
         peerConnection.addTransceiver('audio', { direction: 'sendrecv' });
+        peerConnection.addTransceiver('video', { direction: 'recvonly' });
         peerConnection.addEventListener('icecandidate', event => {
             if (event.candidate) {
                 diagnostics.localCandidates++;
