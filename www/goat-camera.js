@@ -17,6 +17,7 @@
     let webSocket;
     let peerConnection;
     let sessionId;
+    let clientId;
     let remoteDescriptionSet = false;
     let pendingIce = [];
     let adapterCheckInFlight;
@@ -71,7 +72,14 @@
 
     function sendSignal(action, payload) {
         if (webSocket?.readyState !== WebSocket.OPEN) return;
-        webSocket.send(JSON.stringify({ action, messagePayload: encodeMessage(payload) }));
+        const rawPayload = JSON.stringify(payload);
+        webSocket.send(JSON.stringify({
+            action,
+            recipientClientId: '',
+            senderClientId: clientId || '',
+            messagePayload: encodeMessage(payload),
+            sdpPayload: action === 'SDP_OFFER' ? rawPayload : ''
+        }));
     }
 
     async function handleSignal(event) {
@@ -108,9 +116,12 @@
         setStatus('Sichere Kamerasitzung wird angefordert …');
         const session = await sendTo('getGoatCameraSession', { deviceId });
         sessionId = session.sessionId;
+        clientId = session.clientId;
         peerConnection = new RTCPeerConnection({ iceServers: session.iceServers });
         peerConnection.addTransceiver('video', { direction: 'recvonly' });
-        peerConnection.addTransceiver('audio', { direction: 'recvonly' });
+        // The official ECOVACS viewer offers a bidirectional audio section even
+        // when the microphone is muted. No local track is attached here.
+        peerConnection.addTransceiver('audio', { direction: 'sendrecv' });
         peerConnection.addEventListener('icecandidate', event => {
             if (event.candidate) sendSignal('ICE_CANDIDATE', event.candidate.toJSON());
         });
@@ -152,6 +163,7 @@
         video.srcObject = null;
         const closingId = sessionId;
         sessionId = undefined;
+        clientId = undefined;
         if (closingId) {
             try { await sendTo('closeGoatCameraSession', { sessionId: closingId }); } catch { /* expires server-side */ }
         }
