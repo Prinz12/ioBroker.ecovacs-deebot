@@ -73,6 +73,16 @@ describe('goatCamera.js', () => {
         expect(axiosStub.post.called).to.be.false;
     });
 
+    it('matches a raw UUID to the sanitized multi-device context ID', () => {
+        const axiosStub = { get: sinon.stub(), post: sinon.stub() };
+        const { GoatCameraManager } = loadModule(axiosStub);
+        const { adapter, ctx } = createAdapter();
+        delete ctx.did;
+        const manager = new GoatCameraManager(adapter);
+
+        expect(manager.getStatus('f5e7b486-5aaf-49ca-a3cc-58ee8f863cd5').deviceFound).to.be.true;
+    });
+
     it('creates a browser-safe viewer session without exposing cloud credentials or the PIN', async () => {
         const axiosStub = {
             get: sinon.stub(),

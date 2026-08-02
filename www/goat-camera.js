@@ -23,6 +23,7 @@
     let adapterCheckInFlight;
     let answerTimeout;
     let diagnostics;
+    const { encodeMessage, decodeMessage } = window.GoatCameraCodec;
 
     function resetDiagnostics() {
         diagnostics = {
@@ -81,14 +82,6 @@
         if (!result.deviceConnected) throw new Error('GOAT ist derzeit nicht verbunden');
         if (!result.pinConfigured) throw new Error('Vierstellige Video-Manager-PIN fehlt');
         setStatus(result.activeSession ? 'Bereit · aktive Kamerasitzung erkannt' : 'Bereit · Adapter und GOAT erreichbar');
-    }
-
-    function encodeMessage(value) {
-        return btoa(unescape(encodeURIComponent(JSON.stringify(value))));
-    }
-
-    function decodeMessage(value) {
-        return JSON.parse(decodeURIComponent(escape(atob(value))));
     }
 
     function sendSignal(action, payload) {
