@@ -19,6 +19,7 @@
     let sessionId;
     let remoteDescriptionSet = false;
     let pendingIce = [];
+    let adapterCheckInFlight;
 
     function setStatus(message) {
         status.textContent = String(message || 'Unbekannter Fehler');
@@ -159,7 +160,15 @@
         setStatus('Kamera geschlossen');
     }
 
-    socket.on('connect', () => checkAdapter().catch(error => setStatus(errorText(error))));
+    function handleSocketConnect() {
+        if (adapterCheckInFlight) return;
+        adapterCheckInFlight = checkAdapter()
+            .catch(error => setStatus(errorText(error)))
+            .finally(() => { adapterCheckInFlight = undefined; });
+    }
+
+    socket.on('connect', handleSocketConnect);
+    if (socket.connected) handleSocketConnect();
     socket.on('connect_error', () => setStatus('Keine Verbindung zum ioBroker-Webserver'));
     startButton.addEventListener('click', () => start().catch(async error => {
         const message = errorText(error);
