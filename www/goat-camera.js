@@ -21,7 +21,17 @@
     let pendingIce = [];
 
     function setStatus(message) {
-        status.textContent = message;
+        status.textContent = String(message || 'Unbekannter Fehler');
+    }
+
+    function errorText(error) {
+        if (error instanceof Error && error.message) return error.message;
+        if (typeof error === 'string' && error) return error;
+        try {
+            return JSON.stringify(error) || 'Unbekannter Fehler';
+        } catch {
+            return 'Unbekannter Fehler';
+        }
     }
 
     function sendTo(command, message) {
@@ -33,10 +43,21 @@
             const timeout = setTimeout(() => reject(new Error('Zeitüberschreitung bei der Adapter-Anfrage')), 20000);
             socket.emit('sendTo', adapter, command, message, response => {
                 clearTimeout(timeout);
-                if (response?.error) reject(new Error(response.error));
+                if (typeof response === 'string') reject(new Error(response));
+                else if (response?.error) reject(new Error(errorText(response.error)));
+                else if (!response || typeof response !== 'object') reject(new Error('Leere Antwort vom Adapter'));
                 else resolve(response);
             });
         });
+    }
+
+    async function checkAdapter() {
+        const result = await sendTo('getGoatCameraStatus', { deviceId });
+        if (!result.deviceFound) throw new Error('GOAT wurde im Adapter nicht gefunden');
+        if (!result.supported) throw new Error('Kamera ist für dieses GOAT-Modell nicht freigeschaltet');
+        if (!result.deviceConnected) throw new Error('GOAT ist derzeit nicht verbunden');
+        if (!result.pinConfigured) throw new Error('Vierstellige Video-Manager-PIN fehlt');
+        setStatus(result.activeSession ? 'Bereit · aktive Kamerasitzung erkannt' : 'Bereit · Adapter und GOAT erreichbar');
     }
 
     function encodeMessage(value) {
@@ -81,6 +102,8 @@
     async function start() {
         if (!deviceId) throw new Error('In der URL fehlt deviceId');
         startButton.disabled = true;
+        setStatus('Sichere Kamerasitzung wird angefordert …');
+        await checkAdapter();
         setStatus('Sichere Kamerasitzung wird angefordert …');
         const session = await sendTo('getGoatCameraSession', { deviceId });
         sessionId = session.sessionId;
@@ -136,11 +159,11 @@
         setStatus('Kamera geschlossen');
     }
 
-    socket.on('connect', () => setStatus('Bereit'));
+    socket.on('connect', () => checkAdapter().catch(error => setStatus(errorText(error))));
     socket.on('connect_error', () => setStatus('Keine Verbindung zum ioBroker-Webserver'));
     startButton.addEventListener('click', () => start().catch(async error => {
-        const message = error.message;
-        await stop();
+        const message = errorText(error);
+        try { await stop(); } catch { /* preserve the original error */ }
         setStatus(message);
     }));
     stopButton.addEventListener('click', () => stop());

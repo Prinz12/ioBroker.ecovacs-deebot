@@ -51,6 +51,24 @@ function createAdapter(pin = '9876') {
 }
 
 describe('goatCamera.js', () => {
+    it('reports viewer readiness without starting a cloud camera session', () => {
+        const axiosStub = { get: sinon.stub(), post: sinon.stub() };
+        const { GoatCameraManager } = loadModule(axiosStub);
+        const { adapter, ctx } = createAdapter();
+        const manager = new GoatCameraManager(adapter);
+
+        expect(manager.getStatus(ctx.did)).to.deep.equal({
+            adapterReachable: true,
+            deviceFound: true,
+            deviceConnected: true,
+            pinConfigured: true,
+            supported: true,
+            activeSession: false
+        });
+        expect(axiosStub.get.called).to.be.false;
+        expect(axiosStub.post.called).to.be.false;
+    });
+
     it('creates a browser-safe viewer session without exposing cloud credentials or the PIN', async () => {
         const axiosStub = {
             get: sinon.stub(),

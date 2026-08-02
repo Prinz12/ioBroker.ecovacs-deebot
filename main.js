@@ -252,7 +252,12 @@ class EcovacsDeebot extends utils.Adapter {
                 this.log.error('Error in getDeviceList: ' + error.message);
                 this.sendTo(obj.from, obj.command, [], obj.callback);
             }
+        } else if (obj && obj.command === 'getGoatCameraStatus') {
+            this.log.info('GOAT camera viewer status request received');
+            const result = this.cameraManager.getStatus(obj.message?.deviceId);
+            this.sendTo(obj.from, obj.command, result, obj.callback);
         } else if (obj && obj.command === 'getGoatCameraSession') {
+            this.log.info('GOAT camera viewer session request received');
             try {
                 const result = await this.cameraManager.requestSession(obj.message?.deviceId);
                 this.sendTo(obj.from, obj.command, result, obj.callback);
