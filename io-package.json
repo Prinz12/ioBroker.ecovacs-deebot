@@ -116,6 +116,9 @@
     "dataSource": "poll",
     "compact": true,
     "supportCustoms": false,
+    "supportedMessages": {
+      "custom": true
+    },
     "connectionType": "cloud",
     "dependencies": [
       {

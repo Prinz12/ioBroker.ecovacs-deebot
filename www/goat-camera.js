@@ -139,8 +139,9 @@
     socket.on('connect', () => setStatus('Bereit'));
     socket.on('connect_error', () => setStatus('Keine Verbindung zum ioBroker-Webserver'));
     startButton.addEventListener('click', () => start().catch(async error => {
-        setStatus(error.message);
+        const message = error.message;
         await stop();
+        setStatus(message);
     }));
     stopButton.addEventListener('click', () => stop());
     soundButton.addEventListener('click', () => {
