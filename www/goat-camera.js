@@ -47,6 +47,15 @@
         if (status && diagnostics) status.dataset.cameraDiagnostic = JSON.stringify(diagnostics);
     }
 
+    async function shortFingerprint(value) {
+        let hash = 0x811c9dc5;
+        for (const char of String(value || '')) {
+            hash ^= char.charCodeAt(0);
+            hash = Math.imul(hash, 0x01000193);
+        }
+        return (hash >>> 0).toString(16).padStart(8, '0');
+    }
+
     function setStatus(message) {
         status.textContent = String(message || 'Unbekannter Fehler');
     }
@@ -192,6 +201,11 @@
         const session = await sendTo('getGoatCameraSession', { deviceId });
         sessionId = session.sessionId;
         clientId = session.clientId;
+        diagnostics.region = session.region;
+        diagnostics.channelFingerprint = await shortFingerprint(session.channelArn);
+        diagnostics.clientFingerprint = await shortFingerprint(session.clientId);
+        diagnostics.clientIdLength = String(session.clientId || '').length;
+        publishDiagnostics();
         remoteDescriptionSet = false;
         pendingIce = [];
         offerSent = false;
