@@ -121,6 +121,19 @@
             .sort((left, right) => polygonArea(left) - polygonArea(right))[0];
     }
 
+    /** Resolves a pointer event on the SVG to one of the selectable areas. */
+    function areaAtPointer(event) {
+        const matrix = mapSvg.getScreenCTM();
+        if (!matrix) return undefined;
+        const point = mapSvg.createSVGPoint();
+        point.x = event.clientX;
+        point.y = event.clientY;
+        const mapPoint = point.matrixTransform(matrix.inverse());
+        return Array.from(areaPolygons)
+            .filter(([, polygon]) => polygonContainsPoint(polygon, mapPoint.x, mapPoint.y))
+            .sort(([, left], [, right]) => polygonArea(left) - polygonArea(right))[0]?.[0];
+    }
+
     /** Makes the five labelled lawn polygons keyboard- and pointer-selectable. */
     function bindSelectableAreas() {
         const polygons = Array.from(mapSvg.children).filter(element => element.localName === 'polygon');
@@ -145,7 +158,6 @@
             polygon.setAttribute('role', 'button');
             polygon.setAttribute('tabindex', '0');
             polygon.setAttribute('aria-label', `Bereich ${areaId} auswählen`);
-            polygon.addEventListener('click', () => toggleArea(areaId));
             polygon.addEventListener('keydown', event => {
                 if (event.key !== 'Enter' && event.key !== ' ') return;
                 event.preventDefault();
@@ -156,6 +168,10 @@
         for (const polygon of polygons) {
             if (!usedPolygons.has(polygon)) polygon.style.pointerEvents = 'none';
         }
+        mapSvg.addEventListener('click', event => {
+            const areaId = areaAtPointer(event);
+            if (areaId !== undefined) toggleArea(areaId);
+        });
         renderSelection();
     }
 
