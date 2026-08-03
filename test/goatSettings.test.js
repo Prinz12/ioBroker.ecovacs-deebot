@@ -40,6 +40,10 @@ describe('goatSettings.js', () => {
         expect(goatSettings.obstacleModeDetails(1)).to.deep.equal({
             obstacleModeName: 'shortGrass', obstacleHeightCm: 10
         });
+        expect(goatSettings.heightCmToLevel(3)).to.equal(11);
+        expect(goatSettings.heightCmToLevel(6.5)).to.equal(4);
+        expect(goatSettings.heightCmToLevel(8)).to.equal(1);
+        expect(goatSettings.heightCmToLevel(6.2)).to.equal(null);
     });
 
     it('should expose and mirror the confirmed global settings', () => {

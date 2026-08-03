@@ -248,6 +248,7 @@ describe('adapterObjects.js', () => {
                 'control.goat.narrowPathAdaptation',
                 'control.goat.settingsAreaId',
                 'control.goat.settingsMowHeightLevel',
+                'control.goat.settingsMowHeightCm',
                 'control.goat.settingsCutMode',
                 'control.goat.settingsObstacleHeight',
                 'control.goat.settingsDirection',

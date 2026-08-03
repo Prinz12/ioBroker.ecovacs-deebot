@@ -832,7 +832,7 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
             ctx.adapterProxy.getStateAsync
                 .withArgs('control.goat.settingsAreaId').resolves({ val: '4' });
             ctx.adapterProxy.getStateAsync
-                .withArgs('control.goat.settingsMowHeightLevel').resolves({ val: 4 });
+                .withArgs('control.goat.settingsMowHeightCm').resolves({ val: 6.5 });
             ctx.adapterProxy.getStateAsync
                 .withArgs('control.goat.settingsCutMode').resolves({ val: 7 });
             ctx.adapterProxy.getStateAsync
@@ -845,6 +845,9 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
             );
             expect(ctx.adapterProxy.setStateConditional.calledWith(
                 'control.goat.settingsMowHeightLevel', 4, true
+            )).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith(
+                'control.goat.settingsMowHeightCm', 6.5, true
             )).to.be.true;
 
             await adapterCommands.handleStateChange(
@@ -869,7 +872,7 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
             ctx.adapterProxy.getStateAsync
                 .withArgs('control.goat.settingsAreaId').resolves({ val: '4' });
             ctx.adapterProxy.getStateAsync
-                .withArgs('control.goat.settingsMowHeightLevel').resolves({ val: 4 });
+                .withArgs('control.goat.settingsMowHeightCm').resolves({ val: 6.5 });
             ctx.adapterProxy.getStateAsync
                 .withArgs('control.goat.settingsCutMode').resolves({ val: 4 });
             ctx.adapterProxy.getStateAsync
