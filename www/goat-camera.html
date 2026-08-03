@@ -15,8 +15,10 @@
         .cover[hidden] { display: none; }
         button { border: 0; border-radius: 999px; padding: 12px 20px; font: inherit; font-weight: 650; cursor: pointer; background: #74c365; color: #0c2408; }
         button.secondary { background: #29323c; color: #f4f7fa; }
-        button:disabled { cursor: wait; opacity: .55; }
+        button:disabled, select:disabled { cursor: wait; opacity: .55; }
         .toolbar { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+        .resolution { display: flex; gap: 8px; align-items: center; padding: 7px 10px 7px 14px; border-radius: 999px; background: #29323c; font-size: .92rem; }
+        select { border: 0; border-radius: 999px; padding: 5px 10px; font: inherit; color: #f4f7fa; background: #182028; cursor: pointer; }
         #status { flex: 1; min-width: 220px; color: #bac5cf; font-size: .92rem; }
         .privacy { margin: 12px 2px 0; color: #8f9aa5; font-size: .82rem; }
     </style>
@@ -33,6 +35,12 @@
         </div>
     </div>
     <div class="toolbar">
+        <label class="resolution" for="resolution">Auflösung
+            <select id="resolution">
+                <option value="0">Normal</option>
+                <option value="1">Klar</option>
+            </select>
+        </label>
         <button class="secondary" id="sound" disabled>Ton einschalten</button>
         <button class="secondary" id="stop" disabled>Kamera schließen</button>
         <span id="status">Bereit</span>
@@ -43,6 +51,6 @@
 <script src="goat-camera-codec.js?v=attach-stream1"></script>
 <script src="goat-camera-codecs.js?v=attach-stream1"></script>
 <script src="goat-camera-media.js?v=attach-stream1"></script>
-<script src="goat-camera.js?v=attach-stream1"></script>
+<script src="goat-camera.js?v=resolution1"></script>
 </body>
 </html>

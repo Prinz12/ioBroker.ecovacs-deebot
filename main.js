@@ -259,10 +259,24 @@ class EcovacsDeebot extends utils.Adapter {
         } else if (obj && obj.command === 'getGoatCameraSession') {
             this.log.info('GOAT camera viewer session request received');
             try {
-                const result = await this.cameraManager.requestSession(obj.message?.deviceId);
+                const resolution = obj.message?.resolution;
+                const result = resolution === undefined ?
+                    await this.cameraManager.requestSession(obj.message?.deviceId) :
+                    await this.cameraManager.requestSessionWithResolution(obj.message?.deviceId, resolution);
                 this.sendTo(obj.from, obj.command, result, obj.callback);
             } catch (error) {
                 this.log.warn(`GOAT camera session request failed: ${error.message}`);
+                this.sendTo(obj.from, obj.command, { error: error.message }, obj.callback);
+            }
+        } else if (obj && obj.command === 'setGoatCameraResolution') {
+            try {
+                const result = await this.cameraManager.setResolution(
+                    obj.message?.sessionId,
+                    obj.message?.resolution
+                );
+                this.sendTo(obj.from, obj.command, result, obj.callback);
+            } catch (error) {
+                this.log.warn(`GOAT camera resolution change failed: ${error.message}`);
                 this.sendTo(obj.from, obj.command, { error: error.message }, obj.callback);
             }
         } else if (obj && obj.command === 'closeGoatCameraSession') {

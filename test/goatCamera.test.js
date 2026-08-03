@@ -361,6 +361,76 @@ describe('goatCamera.js', () => {
         expect(adapter.log.info.calledWith('GOAT camera session stage: AWS ICE configuration')).to.be.true;
     });
 
+    it('sends only the two Android-app video resolution payloads for an active session', async () => {
+        const axiosStub = { get: sinon.stub(), post: sinon.stub() };
+        const { GoatCameraManager } = loadModule(axiosStub);
+        const { adapter, ctx } = createAdapter();
+        const manager = new GoatCameraManager(adapter);
+        manager.sessions.set('camera-session', { id: 'camera-session', ctx, deviceId: ctx.deviceId });
+
+        const normal = await manager.setResolution('camera-session', 0);
+        const clear = await manager.setResolution('camera-session', 1);
+
+        expect(normal).to.deep.equal({ resolution: 0, resolutionLabel: 'Normal' });
+        expect(clear).to.deep.equal({ resolution: 1, resolutionLabel: 'Clear' });
+        expect(ctx.vacbot.runAsync.firstCall.args).to.deep.equal([
+            'Generic', 'setVideoResolution', { resolution: 0 }, { timeoutMs: 15000 }
+        ]);
+        expect(ctx.vacbot.runAsync.secondCall.args).to.deep.equal([
+            'Generic', 'setVideoResolution', { resolution: 1 }, { timeoutMs: 15000 }
+        ]);
+    });
+
+    it('rejects invalid resolution values and inactive camera sessions without sending', async () => {
+        const axiosStub = { get: sinon.stub(), post: sinon.stub() };
+        const { GoatCameraManager } = loadModule(axiosStub);
+        const { adapter, ctx } = createAdapter();
+        const manager = new GoatCameraManager(adapter);
+
+        let invalidError;
+        let sessionError;
+        try {
+            await manager.setResolution('camera-session', 2);
+        } catch (error) {
+            invalidError = error;
+        }
+        try {
+            await manager.setResolution('missing-session', 1);
+        } catch (error) {
+            sessionError = error;
+        }
+
+        expect(invalidError.message).to.include('0 (Normal) or 1 (Clear)');
+        expect(sessionError.message).to.equal('GOAT camera session is not active');
+        expect(ctx.vacbot.runAsync.called).to.be.false;
+    });
+
+    it('reports a non-zero GOAT device code when a resolution change is rejected', async () => {
+        const axiosStub = { get: sinon.stub(), post: sinon.stub() };
+        const { GoatCameraManager } = loadModule(axiosStub);
+        const { adapter, ctx } = createAdapter();
+        ctx.vacbot.ecovacs = {
+            _resolveImmediatePayload(command, responseData) {
+                return responseData?.resp?.body?.data;
+            }
+        };
+        ctx.vacbot.runAsync.callsFake(async () => ctx.vacbot.ecovacs._resolveImmediatePayload(
+            { name: 'setVideoResolution' },
+            { resp: { body: { code: 30013, msg: 'not supported' } } }
+        ));
+        const manager = new GoatCameraManager(adapter);
+        manager.sessions.set('camera-session', { id: 'camera-session', ctx, deviceId: ctx.deviceId });
+
+        let error;
+        try {
+            await manager.setResolution('camera-session', 1);
+        } catch (caught) {
+            error = caught;
+        }
+
+        expect(error.message).to.equal('GOAT rejected the video resolution (device code 30013)');
+    });
+
     it('creates a deterministic AWS WebSocket signature shape', () => {
         const { signWebSocketUrl } = loadModule({});
         const result = signWebSocketUrl(

@@ -11,6 +11,7 @@
     const startButton = document.getElementById('start');
     const stopButton = document.getElementById('stop');
     const soundButton = document.getElementById('sound');
+    const resolutionSelect = document.getElementById('resolution');
     const status = document.getElementById('status');
 
     const socket = window.io();
@@ -26,6 +27,7 @@
     let adapterCheckInFlight;
     let answerTimeout;
     let diagnostics;
+    let appliedResolution;
     const { encodeMessage, decodeMessage } = window.GoatCameraCodec;
     const { applyGoatVideoCodecPreferences } = window.GoatCameraCodecs;
     const { attachRemoteTracks } = window.GoatCameraMedia;
@@ -70,6 +72,10 @@
         } catch {
             return 'Unbekannter Fehler';
         }
+    }
+
+    function resolutionLabel(value) {
+        return Number(value) === 1 ? 'Klar' : 'Normal';
     }
 
     function sendTo(command, message) {
@@ -197,12 +203,19 @@
     async function start() {
         if (!deviceId) throw new Error('In der URL fehlt deviceId');
         startButton.disabled = true;
+        resolutionSelect.disabled = true;
         setStatus('Sichere Kamerasitzung wird angefordert …');
         await checkAdapter();
         setStatus('Sichere Kamerasitzung wird angefordert …');
-        const session = await sendTo('getGoatCameraSession', { deviceId });
+        const requestedResolution = Number(resolutionSelect.value);
+        const session = await sendTo('getGoatCameraSession', {
+            deviceId,
+            resolution: requestedResolution
+        });
         sessionId = session.sessionId;
         clientId = session.clientId;
+        appliedResolution = session.resolution;
+        resolutionSelect.value = String(appliedResolution);
         remoteDescriptionSet = false;
         pendingIce = [];
         offerSent = false;
@@ -213,6 +226,7 @@
         diagnostics.channelFingerprint = await shortFingerprint(session.channelArn);
         diagnostics.clientFingerprint = await shortFingerprint(session.clientId);
         diagnostics.clientIdLength = String(session.clientId || '').length;
+        diagnostics.resolution = appliedResolution;
         publishDiagnostics();
         peerConnection = new RTCPeerConnection({
             iceServers: session.iceServers,
@@ -304,7 +318,35 @@
         cover.hidden = true;
         stopButton.disabled = false;
         soundButton.disabled = false;
+        resolutionSelect.disabled = false;
         setStatus('Livebild wird aufgebaut …');
+    }
+
+    async function changeResolution() {
+        const requestedResolution = Number(resolutionSelect.value);
+        if (!sessionId) {
+            setStatus(`Bereit · ${resolutionLabel(requestedResolution)} für den nächsten Start gewählt`);
+            return;
+        }
+        const previousResolution = appliedResolution;
+        resolutionSelect.disabled = true;
+        setStatus(`Auflösung wird auf ${resolutionLabel(requestedResolution)} gestellt …`);
+        try {
+            const result = await sendTo('setGoatCameraResolution', {
+                sessionId,
+                resolution: requestedResolution
+            });
+            appliedResolution = result.resolution;
+            resolutionSelect.value = String(appliedResolution);
+            diagnostics.resolution = appliedResolution;
+            publishDiagnostics();
+            setStatus(`Auflösung: ${resolutionLabel(appliedResolution)}`);
+        } catch (error) {
+            resolutionSelect.value = String(previousResolution);
+            throw error;
+        } finally {
+            resolutionSelect.disabled = false;
+        }
     }
 
     async function stop() {
@@ -329,6 +371,7 @@
         }
         cover.hidden = false;
         startButton.disabled = false;
+        resolutionSelect.disabled = false;
         setStatus('Kamera geschlossen');
     }
 
@@ -352,6 +395,14 @@
     soundButton.addEventListener('click', () => {
         video.muted = !video.muted;
         soundButton.textContent = video.muted ? 'Ton einschalten' : 'Ton ausschalten';
+    });
+    resolutionSelect.addEventListener('change', () => changeResolution().catch(error => {
+        setStatus(errorText(error));
+    }));
+    video.addEventListener('resize', () => {
+        diagnostics.frameWidth = video.videoWidth;
+        diagnostics.frameHeight = video.videoHeight;
+        publishDiagnostics();
     });
     window.addEventListener('pagehide', () => {
         if (sessionId && socket?.connected) {
