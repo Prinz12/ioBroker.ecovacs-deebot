@@ -28,6 +28,7 @@
     let answerTimeout;
     let diagnostics;
     let appliedResolution;
+    let resolutionChangeInFlight = false;
     const { encodeMessage, decodeMessage } = window.GoatCameraCodec;
     const { applyGoatVideoCodecPreferences } = window.GoatCameraCodecs;
     const { attachRemoteTracks } = window.GoatCameraMedia;
@@ -207,15 +208,10 @@
         setStatus('Sichere Kamerasitzung wird angefordert …');
         await checkAdapter();
         setStatus('Sichere Kamerasitzung wird angefordert …');
-        const requestedResolution = Number(resolutionSelect.value);
-        const session = await sendTo('getGoatCameraSession', {
-            deviceId,
-            resolution: requestedResolution
-        });
+        const session = await sendTo('getGoatCameraSession', { deviceId });
         sessionId = session.sessionId;
         clientId = session.clientId;
-        appliedResolution = session.resolution;
-        resolutionSelect.value = String(appliedResolution);
+        appliedResolution = undefined;
         remoteDescriptionSet = false;
         pendingIce = [];
         offerSent = false;
@@ -226,7 +222,7 @@
         diagnostics.channelFingerprint = await shortFingerprint(session.channelArn);
         diagnostics.clientFingerprint = await shortFingerprint(session.clientId);
         diagnostics.clientIdLength = String(session.clientId || '').length;
-        diagnostics.resolution = appliedResolution;
+        diagnostics.requestedResolution = Number(resolutionSelect.value);
         publishDiagnostics();
         peerConnection = new RTCPeerConnection({
             iceServers: session.iceServers,
@@ -318,17 +314,18 @@
         cover.hidden = true;
         stopButton.disabled = false;
         soundButton.disabled = false;
-        resolutionSelect.disabled = false;
         setStatus('Livebild wird aufgebaut …');
     }
 
     async function changeResolution() {
+        if (resolutionChangeInFlight) return;
         const requestedResolution = Number(resolutionSelect.value);
         if (!sessionId) {
             setStatus(`Bereit · ${resolutionLabel(requestedResolution)} für den nächsten Start gewählt`);
             return;
         }
         const previousResolution = appliedResolution;
+        resolutionChangeInFlight = true;
         resolutionSelect.disabled = true;
         setStatus(`Auflösung wird auf ${resolutionLabel(requestedResolution)} gestellt …`);
         try {
@@ -342,9 +339,12 @@
             publishDiagnostics();
             setStatus(`Auflösung: ${resolutionLabel(appliedResolution)}`);
         } catch (error) {
-            resolutionSelect.value = String(previousResolution);
+            if (previousResolution !== undefined) {
+                resolutionSelect.value = String(previousResolution);
+            }
             throw error;
         } finally {
+            resolutionChangeInFlight = false;
             resolutionSelect.disabled = false;
         }
     }
@@ -403,6 +403,9 @@
         diagnostics.frameWidth = video.videoWidth;
         diagnostics.frameHeight = video.videoHeight;
         publishDiagnostics();
+        if (sessionId && appliedResolution === undefined) {
+            changeResolution().catch(error => setStatus(errorText(error)));
+        }
     });
     window.addEventListener('pagehide', () => {
         if (sessionId && socket?.connected) {
