@@ -120,7 +120,7 @@ describe('goatMap.js', () => {
         ctx.getPlatformType.returns('lawnMower');
         ctx.getModel().getDeviceClass.returns('2i0fns');
         const original = sinon.stub().resolves('handled');
-        const vacbot = { dispatcher: { handleMessagePayload: original } };
+        const vacbot = { ecovacs: { dispatcher: { handleMessagePayload: original } } };
         const encoded = encodeGoatFixture([
             ['1', '1', '1;1;remaining;0,0;100,0'],
             ['1', '2', '1;2;completed;0,0;4(2)2(2)']
@@ -129,10 +129,10 @@ describe('goatMap.js', () => {
 
         expect(goatMap.registerTelemetryBridge(vacbot, ctx)).to.be.true;
         expect(goatMap.registerTelemetryBridge(vacbot, ctx)).to.be.true;
-        expect(await vacbot.dispatcher.handleMessagePayload('_getMapTrack', {
+        expect(await vacbot.ecovacs.dispatcher.handleMessagePayload('_getMapTrack', {
             batid: 'batch-bridge', serial: '2', index: '0', info: encoded.slice(0, middle)
         })).to.equal('handled');
-        await vacbot.dispatcher.handleMessagePayload('_getMapTrack', {
+        await vacbot.ecovacs.dispatcher.handleMessagePayload('_getMapTrack', {
             batid: 'batch-bridge', serial: '2', index: '1', info: encoded.slice(middle)
         });
 
