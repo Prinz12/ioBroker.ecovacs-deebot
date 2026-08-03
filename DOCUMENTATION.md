@@ -300,6 +300,8 @@ Schedule writes are accepted only while the mower reports `idle`, and are follow
 
 The map responses use a shortened LZMA-Alone header and compact 50 mm direction steps. The adapter decodes them locally and never sends a movement command during a refresh. The initial map read and its dependent layer reads go through the normal request throttle. A selection start is rejected when the map is missing, an ID is unknown, or the mower is not idle.
 
+The bundled GOAT web map provides separate modes for mowing-area and trim-boundary selection. Physical and virtual trim boundaries update only the staged `trimBoundaryIds` and `trimVirtualBoundaryIds` states; selecting a line never starts the mower. The SVG map supports mouse-wheel and button zoom, touch pinch zoom, dragging, fit-to-map, and centring on the current GOAT position.
+
 ### Command Flow
 
 ```

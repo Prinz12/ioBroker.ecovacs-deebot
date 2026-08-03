@@ -9,22 +9,49 @@
         * { box-sizing: border-box; }
         html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; }
         #map { position: absolute; inset: 0; display: grid; place-items: center; }
-        #map svg { display: block; width: 100%; height: 100%; }
+        #map svg { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; user-select: none; }
+        #map svg.is-panning { cursor: grabbing; }
         #map svg .goat-area-selectable { cursor: pointer; transition: fill-opacity .15s ease, stroke .15s ease, stroke-width .15s ease; }
         #map svg .goat-area-selectable:hover,
         #map svg .goat-area-selectable:focus { outline: none; stroke: #38bdf8 !important; stroke-width: 190px !important; }
         #map svg .goat-area-selected { fill-opacity: .78 !important; stroke: #38bdf8 !important; stroke-width: 230px !important; }
+        #map svg.trim-mode .goat-area-selectable { pointer-events: none; }
+        #map svg .goat-boundary-visible { stroke-width: 4px !important; pointer-events: none; }
+        #map svg .goat-boundary-hit { stroke-width: 26px !important; pointer-events: none; }
+        #map svg.trim-mode .goat-boundary-hit { cursor: pointer; pointer-events: stroke; }
+        #map svg.trim-mode .goat-boundary-hit:hover + .goat-boundary-label,
+        #map svg.trim-mode .goat-boundary-hit:focus + .goat-boundary-label,
+        #map svg .goat-boundary-selected .goat-boundary-label { display: block; }
+        #map svg.trim-mode .goat-boundary-hit:hover,
+        #map svg.trim-mode .goat-boundary-hit:focus { outline: none; stroke: rgba(56,189,248,.2); }
+        #map svg .goat-boundary-selected .goat-boundary-visible { stroke: #38bdf8 !important; stroke-width: 7px !important; filter: drop-shadow(0 0 6px #38bdf8); }
+        #map svg .goat-boundary-label { display: none; fill: #e0f2fe; stroke: #08111f; stroke-width: 75px; font-weight: 700; pointer-events: none; }
+        #map svg #goat-boundary-overlay { isolation: isolate; }
         #map svg #goat-live-overlay { pointer-events: none; }
         .badge { position: absolute; z-index: 2; padding: 6px 9px; border: 1px solid #334155; border-radius: 9px; background: #08111fd9; color: #cbd5e1; font-size: 11px; line-height: 1.35; pointer-events: none; }
         #progress { top: 7px; right: 7px; text-align: right; }
         #selection { top: 7px; left: 7px; }
         #legend { left: 7px; bottom: 7px; display: flex; gap: 10px; align-items: center; }
+        #toolbar { position: absolute; right: 7px; bottom: 7px; z-index: 3; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; max-width: calc(100% - 14px); }
+        .tool-group { display: flex; gap: 3px; padding: 3px; border: 1px solid #334155; border-radius: 10px; background: #08111fe8; box-shadow: 0 5px 18px rgba(0,0,0,.28); }
+        .tool-button { min-width: 34px; height: 32px; padding: 0 9px; border: 1px solid transparent; border-radius: 7px; background: #1e293b; color: #e2e8f0; font: 600 11px Arial,sans-serif; cursor: pointer; touch-action: manipulation; }
+        .tool-button:hover,
+        .tool-button:focus-visible { outline: none; border-color: #38bdf8; }
+        .tool-button.active { background: #0284c7; color: #fff; }
+        #zoom-level { min-width: 54px; color: #7dd3fc; }
         .key { display: inline-flex; gap: 5px; align-items: center; white-space: nowrap; }
         .line { width: 18px; height: 4px; border-radius: 3px; background: #22c55e; }
         .line.remaining { height: 2px; background: repeating-linear-gradient(90deg,#94a3b8 0 5px,transparent 5px 8px); }
         .dot { width: 8px; height: 8px; border: 2px solid #fff; border-radius: 50%; background: #2563eb; }
         #message { inset: 0; display: grid; place-items: center; border: 0; background: transparent; color: #94a3b8; font-size: 12px; }
         #message[hidden] { display: none; }
+        @media (max-width: 620px) {
+            #selection { max-width: calc(100% - 14px); top: 44px; }
+            #progress { max-width: calc(100% - 14px); }
+            #legend { display: none; }
+            #toolbar { left: 7px; justify-content: space-between; }
+            .tool-button { height: 36px; padding: 0 8px; }
+        }
     </style>
 </head>
 <body>
@@ -35,8 +62,22 @@
     <span class="key"><span class="line"></span>gemäht</span>
     <span class="key"><span class="dot"></span>GOAT · Fahrtrichtung</span>
 </div>
+<div id="toolbar" aria-label="Kartensteuerung">
+    <div class="tool-group" aria-label="Auswahlmodus">
+        <button class="tool-button active" id="mode-areas" type="button" aria-pressed="true">Flächen</button>
+        <button class="tool-button" id="mode-trim" type="button" aria-pressed="false">Trimmgrenzen</button>
+        <button class="tool-button" id="selection-clear" type="button">Auswahl löschen</button>
+    </div>
+    <div class="tool-group" aria-label="Zoom">
+        <button class="tool-button" id="zoom-out" type="button" aria-label="Verkleinern">−</button>
+        <button class="tool-button" id="zoom-level" type="button" aria-label="Karte einpassen">100 %</button>
+        <button class="tool-button" id="zoom-in" type="button" aria-label="Vergrößern">+</button>
+        <button class="tool-button" id="zoom-fit" type="button">Einpassen</button>
+        <button class="tool-button" id="zoom-robot" type="button">GOAT</button>
+    </div>
+</div>
 <div class="badge" id="message">Gartenkarte wird geladen</div>
 <script src="/socket.io/socket.io.js"></script>
-<script src="goat-map.js?v=selectable-areas5"></script>
+<script src="goat-map.js?v=trim-zoom1"></script>
 </body>
 </html>
