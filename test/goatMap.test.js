@@ -160,13 +160,15 @@ describe('goatMap.js', () => {
         ctx.getPlatformType.returns('lawnMower');
         ctx.getModel().getDeviceClass.returns('2i0fns');
         ctx.intervalQueue.add = sinon.stub();
-        ctx.intervalQueue.runAll = sinon.stub();
+        ctx.intervalQueue.resetQueue = sinon.stub();
+        ctx.intervalQueue.startNextItemFromQueue = sinon.stub();
 
         expect(goatMap.requestMap(ctx)).to.be.true;
+        expect(ctx.intervalQueue.resetQueue.calledOnce).to.be.true;
         expect(ctx.intervalQueue.add.calledWith(
             'Generic', 'getMI', { type: '0' }
         )).to.be.true;
         expect(ctx.intervalQueue.add.calledOnce).to.be.true;
-        expect(ctx.intervalQueue.runAll.calledOnce).to.be.true;
+        expect(ctx.intervalQueue.startNextItemFromQueue.calledOnceWith(false)).to.be.true;
     });
 });
