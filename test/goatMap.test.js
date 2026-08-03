@@ -40,7 +40,17 @@ describe('goatMap.js', () => {
         const areas = goatMap.parseAreaMetadata([
             ['1', '1', '', '', '50', '50', '']
         ], 'ar');
-        const svg = goatMap.renderSvg({ main, trimBoundaries, areas });
+        const tracks = goatMap.parseMapTrack([
+            ['1', '1', '1;1;remaining;0,0;100,0'],
+            ['1', '2', '1;2;completed;0,0;4(2)2(2)']
+        ]);
+        const svg = goatMap.renderSvg({
+            main,
+            trimBoundaries,
+            areas,
+            tracks,
+            position: { x: 50, y: 50, heading: 90, valid: true }
+        });
 
         expect(main[0].aid).to.equal('1');
         expect(main[0].containsStation).to.be.true;
@@ -48,6 +58,55 @@ describe('goatMap.js', () => {
         expect(svg).to.include('<svg');
         expect(svg).to.include('Bereich 1');
         expect(svg).to.include('#8e24aa');
+        expect(svg).to.include('#2e7d32');
+        expect(svg).to.include('GOAT position');
+    });
+
+    it('should parse position, progress and chunked mowing tracks read-only', () => {
+        const ctx = createMockCtx();
+        ctx.getPlatformType.returns('lawnMower');
+        ctx.getModel().getDeviceClass.returns('2i0fns');
+
+        expect(goatMap.handlePayload(ctx, {
+            deebotPos: { x: 1250, y: -750, a: 45, invalid: 0 }
+        })).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'map.goat.positionX', 1250, true
+        )).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'map.goat.positionValid', true, true
+        )).to.be.true;
+
+        expect(goatMap.handlePayload(ctx, {
+            getStats: { code: 0, data: { mowedArea: 250000, area: 1000000 } },
+            getBattery: { code: 0, data: { value: 80 } }
+        })).to.be.false;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'map.goat.mowedSquareMeters', 25, true
+        )).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'map.goat.mowingProgress', 25, true
+        )).to.be.true;
+
+        const encoded = encodeGoatFixture([
+            ['1', '1', '1;1;remaining;0,0;100,0'],
+            ['1', '2', '1;2;completed;0,0;4(2)2(2)']
+        ]);
+        const middle = Math.floor(encoded.length / 2);
+        expect(goatMap.handlePayload(ctx, {
+            batid: 'batch-1', serial: '2', index: '0', totalWidth: 5000,
+            totalHeight: 5000, info: encoded.slice(0, middle)
+        })).to.be.true;
+        expect(goatMap.handlePayload(ctx, {
+            batid: 'batch-1', serial: '2', index: '1', totalWidth: 5000,
+            totalHeight: 5000, info: encoded.slice(middle)
+        })).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'map.goat.completedTrackCount', 1, true
+        )).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'map.goat.remainingTrackCount', 1, true
+        )).to.be.true;
     });
 
     it('should consume getMI and queue only read-only map follow-ups', () => {
@@ -88,5 +147,26 @@ describe('goatMap.js', () => {
 
         expect(goatMap.requestMap(ctx)).to.be.false;
         expect(ctx.intervalQueue.run.called).to.be.false;
+    });
+
+    it('should queue only read-only static and live map requests on refresh', () => {
+        const ctx = createMockCtx();
+        ctx.getPlatformType.returns('lawnMower');
+        ctx.getModel().getDeviceClass.returns('2i0fns');
+        ctx.intervalQueue.add = sinon.stub();
+        ctx.intervalQueue.runAll = sinon.stub();
+
+        expect(goatMap.requestMap(ctx)).to.be.true;
+        expect(ctx.intervalQueue.add.calledWith(
+            'Generic', 'getMI', { type: '0' }
+        )).to.be.true;
+        expect(ctx.intervalQueue.add.calledWith(
+            'Generic', 'getPos', ['chargePos', 'deebotPos']
+        )).to.be.true;
+        expect(ctx.intervalQueue.add.calledWith('Generic', 'getMapTrack')).to.be.true;
+        expect(ctx.intervalQueue.add.calledWith(
+            'Generic', 'getInfo', ['getStats']
+        )).to.be.true;
+        expect(ctx.intervalQueue.runAll.calledOnce).to.be.true;
     });
 });

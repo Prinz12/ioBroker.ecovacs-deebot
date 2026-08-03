@@ -153,7 +153,8 @@ describe('adapterQueue.js', () => {
             queue.addInitialGetCommands();
 
             expect(queue.entries.map(entry => entry.cmd)).to.deep.equal([
-                'GetNetInfo', 'Generic', 'Generic', 'Generic', 'Generic', 'Generic', 'Generic'
+                'GetNetInfo', 'Generic', 'Generic', 'Generic', 'Generic', 'Generic', 'Generic',
+                'Generic', 'Generic'
             ]);
             expect(queue.entries[1].arg1).to.equal('getInfo');
             expect(queue.entries[1].arg2).to.deep.equal([
@@ -161,7 +162,8 @@ describe('adapterQueue.js', () => {
                 'getChargeState',
                 'getCleanInfo',
                 'getRobotFeature',
-                'getError'
+                'getError',
+                'getStats'
             ]);
             expect(queue.entries[2]).to.include({ cmd: 'Generic', arg1: 'getAreaParameter' });
             expect(queue.entries[3].arg1).to.equal('getInfo');
@@ -181,6 +183,9 @@ describe('adapterQueue.js', () => {
             expect(queue.entries[5]).to.include({ cmd: 'Generic', arg1: 'getSchedules' });
             expect(queue.entries[6]).to.include({ cmd: 'Generic', arg1: 'getMI' });
             expect(queue.entries[6].arg2).to.deep.equal({ type: '0' });
+            expect(queue.entries[7]).to.include({ cmd: 'Generic', arg1: 'getPos' });
+            expect(queue.entries[7].arg2).to.deep.equal(['chargePos', 'deebotPos']);
+            expect(queue.entries[8]).to.include({ cmd: 'Generic', arg1: 'getMapTrack' });
         });
 
         it('should not query an unverified lawn mower model', () => {
@@ -248,13 +253,17 @@ describe('adapterQueue.js', () => {
             expect(cmds).to.not.include('GetSleepStatus');
         });
 
-        it('should poll only the Generic status bundle for a lawn mower', () => {
+        it('should poll only read-only status and live-map queries for a lawn mower', () => {
             ctx.getPlatformType.returns('lawnMower');
             ctx.getModel().getDeviceClass.returns('2i0fns');
             queue.addStandardGetCommands();
 
-            expect(queue.entries.map(entry => entry.cmd)).to.deep.equal(['Generic']);
+            expect(queue.entries.map(entry => entry.cmd)).to.deep.equal([
+                'Generic', 'Generic', 'Generic'
+            ]);
             expect(queue.entries[0].arg1).to.equal('getInfo');
+            expect(queue.entries[1].arg1).to.equal('getPos');
+            expect(queue.entries[2].arg1).to.equal('getMapTrack');
         });
 
         it('should not poll an unverified lawn mower model', () => {
@@ -386,7 +395,7 @@ describe('adapterQueue.js', () => {
             );
             expect(command.name).to.equal('getInfo');
             expect(JSON.stringify(command.args)).to.equal(
-                '["getBattery","getChargeState","getCleanInfo","getRobotFeature","getError"]'
+                '["getBattery","getChargeState","getCleanInfo","getRobotFeature","getError","getStats"]'
             );
         });
 
