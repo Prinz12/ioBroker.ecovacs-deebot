@@ -56,8 +56,20 @@
         'liveLastUpdate',
         'geometry'
     ];
+    const liveStateNames = [
+        'positionX',
+        'positionY',
+        'positionValid',
+        'positionHeading',
+        'mowedTrail',
+        'mowedSquareMeters',
+        'totalSquareMeters',
+        'mowingProgress',
+        'liveLastUpdate'
+    ];
     const areaNames = ['Area1', 'Area2', 'Area3', 'Area4', 'Area5'];
     const mapStateIds = stateNames.map(name => `${basePath}.${name}`);
+    const liveStateIds = liveStateNames.map(name => `${basePath}.${name}`);
     const selectionStateIds = areaNames.map(name => `${selectionBasePath}.${name}`);
     const controlStateIds = [
         `${controlBasePath}.trimBoundaryIds`,
@@ -679,6 +691,12 @@
         for (const id of stateIds) readState(id);
     }
 
+    /** Re-reads live states locally when a long-open socket misses a change event. */
+    function refreshLiveStates() {
+        if (!socket.connected) return;
+        for (const id of liveStateIds) readState(id);
+    }
+
     async function loadMap() {
         if (mapUrl.origin !== location.origin || !mapUrl.pathname.startsWith('/vis-2.0/')) {
             throw new Error('Ungültige Basiskarte');
@@ -721,6 +739,11 @@
         progress.textContent = 'Live-Verbindung getrennt';
     });
     if (socket.connected) subscribe();
+    const liveRefreshTimer = window.setInterval(refreshLiveStates, 5000);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) refreshLiveStates();
+    });
+    window.addEventListener('beforeunload', () => window.clearInterval(liveRefreshTimer));
 
     loadMap().catch(error => {
         message.textContent = error?.message || 'Gartenkarte konnte nicht geladen werden';
