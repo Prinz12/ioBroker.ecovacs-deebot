@@ -838,7 +838,7 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
             ctx.adapterProxy.getStateAsync
                 .withArgs('control.goat.settingsObstacleHeight').resolves({ val: 2 });
             ctx.adapterProxy.getStateAsync
-                .withArgs('control.goat.settingsDirection').resolves({ val: 180 });
+                .withArgs('control.goat.settingsDirectionApp').resolves({ val: 90 });
 
             await adapterCommands.handleStateChange(
                 adapter, ctx, 'control.goat.loadAreaSettings', { ack: false, val: true }
@@ -848,6 +848,9 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
             )).to.be.true;
             expect(ctx.adapterProxy.setStateConditional.calledWith(
                 'control.goat.settingsMowHeightCm', 6.5, true
+            )).to.be.true;
+            expect(ctx.adapterProxy.setStateConditional.calledWith(
+                'control.goat.settingsDirectionApp', 90, true
             )).to.be.true;
 
             await adapterCommands.handleStateChange(
@@ -878,7 +881,7 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
             ctx.adapterProxy.getStateAsync
                 .withArgs('control.goat.settingsObstacleHeight').resolves({ val: 3 });
             ctx.adapterProxy.getStateAsync
-                .withArgs('control.goat.settingsDirection').resolves({ val: 137 });
+                .withArgs('control.goat.settingsDirectionApp').resolves({ val: 133 });
 
             await adapterCommands.handleStateChange(
                 adapter, ctx, 'control.goat.applyAreaSettings', { ack: false, val: true }

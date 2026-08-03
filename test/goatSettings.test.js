@@ -28,7 +28,7 @@ describe('goatSettings.js', () => {
                 areaID: '1', mowHeightLevel: 7, cutHeightCm: 5,
                 cutMode: 7, cutModeName: 'fine', cutSpeedMps: 0.35,
                 obstacleHeight: 3, obstacleModeName: 'highGrass',
-                obstacleHeightCm: 20, angle: 90
+                obstacleHeightCm: 20, angle: 90, appAngle: 180
             }]), true
         )).to.be.true;
     });
@@ -44,6 +44,12 @@ describe('goatSettings.js', () => {
         expect(goatSettings.heightCmToLevel(6.5)).to.equal(4);
         expect(goatSettings.heightCmToLevel(8)).to.equal(1);
         expect(goatSettings.heightCmToLevel(6.2)).to.equal(null);
+        expect(goatSettings.directionProtocolToApp(270)).to.equal(0);
+        expect(goatSettings.directionProtocolToApp(180)).to.equal(90);
+        expect(goatSettings.directionProtocolToApp(90)).to.equal(180);
+        expect(goatSettings.directionAppToProtocol(0)).to.equal(270);
+        expect(goatSettings.directionAppToProtocol(90)).to.equal(180);
+        expect(goatSettings.directionAppToProtocol(180)).to.equal(90);
     });
 
     it('should expose and mirror the confirmed global settings', () => {

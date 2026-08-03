@@ -252,6 +252,7 @@ describe('adapterObjects.js', () => {
                 'control.goat.settingsCutMode',
                 'control.goat.settingsObstacleHeight',
                 'control.goat.settingsDirection',
+                'control.goat.settingsDirectionApp',
                 'control.goat.scheduleId',
                 'control.goat.scheduleName',
                 'control.goat.scheduleEnabled',
