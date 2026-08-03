@@ -79,7 +79,7 @@
         const nextValue = selectedAreas.get(areaId) !== true;
         selectedAreas.set(areaId, nextValue);
         renderSelection();
-        socket.emit('setState', `${selectionBasePath}.Area${areaId}`, nextValue);
+        socket.emit('setState', `${selectionBasePath}.Area${areaId}`, { val: nextValue, ack: false });
     }
 
     /** Copies a browser SVGPointList into a regular array. */
