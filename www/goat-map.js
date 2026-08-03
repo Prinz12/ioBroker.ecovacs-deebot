@@ -43,6 +43,8 @@
 
     const maximumZoom = 6;
     const dragThreshold = 7;
+    const mowerCuttingWidth = 220;
+    const mowerTrailOutlineWidth = 300;
 
     const stateNames = [
         'positionX',
@@ -271,7 +273,11 @@
                 event.preventDefault();
                 toggleArea(areaId);
             });
+            label.classList.add('goat-area-label');
             label.style.pointerEvents = 'none';
+            label.style.paintOrder = 'stroke';
+            label.style.stroke = '#f8fafc';
+            label.style.strokeWidth = '140';
         });
         for (const polygon of polygons) {
             if (!usedPolygons.has(polygon)) polygon.style.pointerEvents = 'none';
@@ -604,13 +610,13 @@
                     ...common,
                     stroke: '#0f172a',
                     'stroke-opacity': '.45',
-                    'stroke-width': '520'
+                    'stroke-width': mowerTrailOutlineWidth
                 }),
                 createSvgElement('polyline', {
                     ...common,
                     stroke: '#22c55e',
                     'stroke-opacity': '.8',
-                    'stroke-width': '360'
+                    'stroke-width': mowerCuttingWidth
                 })
             );
         }
@@ -716,6 +722,7 @@
         mapSvg.append(boundaryOverlay);
         overlay = createSvgElement('g', { id: 'goat-live-overlay' });
         mapSvg.append(overlay);
+        for (const label of mapSvg.querySelectorAll('.goat-area-label')) mapSvg.append(label);
         mapHost.replaceChildren(mapSvg);
         bindViewportControls();
         setSelectionMode(selectionMode);
