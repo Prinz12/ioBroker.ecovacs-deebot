@@ -856,6 +856,37 @@ describe('adapterCommands.js - control command dispatch with real path resolutio
             })).to.be.true;
             clock.restore();
         });
+
+        it('should accept the app efficient mode and a continuous direction angle', async () => {
+            const clock = sinon.useFakeTimers();
+            const areaParameters = JSON.stringify([{
+                areaID: '4', mowHeightLevel: 4, cutMode: 7,
+                obstacleHeight: 2, angle: 180
+            }]);
+            ctx.adapterProxy.getStateAsync.withArgs('info.goat.workState').resolves({ val: 'idle' });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('info.goat.settings.areaParameters').resolves({ val: areaParameters });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('control.goat.settingsAreaId').resolves({ val: '4' });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('control.goat.settingsMowHeightLevel').resolves({ val: 4 });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('control.goat.settingsCutMode').resolves({ val: 4 });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('control.goat.settingsObstacleHeight').resolves({ val: 3 });
+            ctx.adapterProxy.getStateAsync
+                .withArgs('control.goat.settingsDirection').resolves({ val: 137 });
+
+            await adapterCommands.handleStateChange(
+                adapter, ctx, 'control.goat.applyAreaSettings', { ack: false, val: true }
+            );
+
+            expect(ctx.vacbot.run.calledWith('Generic', 'setAreaParameter', {
+                areaID: '4', mowHeightLevel: 4, cutMode: 4,
+                obstacleHeight: 3, angle: 137
+            })).to.be.true;
+            clock.restore();
+        });
     });
 
     // ======================================================================

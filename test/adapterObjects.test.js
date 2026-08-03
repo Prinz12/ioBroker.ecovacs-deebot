@@ -264,6 +264,16 @@ describe('adapterObjects.js', () => {
                 expect(call, id).to.exist;
                 expect(call.args[4], id).to.equal(true);
             }
+            expect(ctx.adapterProxy.extendObjectAsync.calledWith(
+                'control.goat.settingsDirection', {
+                    common: { min: 90, max: 270, step: 1 }
+                }
+            )).to.be.true;
+            expect(ctx.adapterProxy.extendObjectAsync.calledWithMatch(
+                'control.goat.settingsCutMode', {
+                    common: { states: { 7: 'Fine (0.35 m/s)', 4: 'Efficient (0.5 m/s)' } }
+                }
+            )).to.be.true;
         });
 
     });

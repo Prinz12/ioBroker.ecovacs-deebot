@@ -26,9 +26,20 @@ describe('goatSettings.js', () => {
         expect(ctx.adapterProxy.setStateConditional.calledWith(
             'info.goat.settings.areaParameters', JSON.stringify([{
                 areaID: '1', mowHeightLevel: 7, cutHeightCm: 5,
-                cutMode: 7, obstacleHeight: 3, angle: 90
+                cutMode: 7, cutModeName: 'fine', cutSpeedMps: 0.35,
+                obstacleHeight: 3, obstacleModeName: 'highGrass',
+                obstacleHeightCm: 20, angle: 90
             }]), true
         )).to.be.true;
+    });
+
+    it('should expose the exact app mappings for efficient mowing and avoidance', () => {
+        expect(goatSettings.cutModeDetails(4)).to.deep.equal({
+            cutModeName: 'efficient', cutSpeedMps: 0.5
+        });
+        expect(goatSettings.obstacleModeDetails(1)).to.deep.equal({
+            obstacleModeName: 'shortGrass', obstacleHeightCm: 10
+        });
     });
 
     it('should expose and mirror the confirmed global settings', () => {
