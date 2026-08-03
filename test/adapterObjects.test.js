@@ -351,6 +351,7 @@ describe('adapterObjects.js', () => {
                 'map.goat.areaIds',
                 'map.goat.trimBoundaryIds',
                 'map.goat.geometry',
+                'map.goat.mowedTrail',
                 'map.goat.svg'
             ]) {
                 expect(ctx.adapterProxy.createObjectNotExists.calledWith(id), id).to.be.true;

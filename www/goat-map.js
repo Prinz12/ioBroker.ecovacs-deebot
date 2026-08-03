@@ -21,7 +21,7 @@
         'positionY',
         'positionValid',
         'positionHeading',
-        'tracks',
+        'mowedTrail',
         'mowedSquareMeters',
         'totalSquareMeters',
         'mowingProgress',
@@ -44,38 +44,42 @@
         return element;
     }
 
-    function appendTrackGroups(groups, completed) {
-        if (!Array.isArray(groups) || !overlay) return;
-        for (const group of groups) {
-            for (const lid of group?.lids || []) {
-                for (const trace of lid?.traces || []) {
-                    const points = [];
-                    for (let index = 0; index + 1 < trace.length; index += 2) {
-                        const x = Number(trace[index]);
-                        const y = Number(trace[index + 1]);
-                        if (Number.isFinite(x) && Number.isFinite(y)) points.push(`${x},${y}`);
-                    }
-                    if (points.length < 2) continue;
-                    overlay.append(createSvgElement('polyline', completed ? {
-                        points: points.join(' '),
-                        fill: 'none',
-                        stroke: '#22c55e',
-                        'stroke-opacity': '.72',
-                        'stroke-width': '360',
-                        'stroke-linecap': 'round',
-                        'stroke-linejoin': 'round'
-                    } : {
-                        points: points.join(' '),
-                        fill: 'none',
-                        stroke: '#94a3b8',
-                        'stroke-opacity': '.78',
-                        'stroke-width': '110',
-                        'stroke-dasharray': '260 180',
-                        'stroke-linecap': 'round',
-                        'stroke-linejoin': 'round'
-                    }));
-                }
+    function renderMowedTrail() {
+        if (!overlay) return;
+        let traces = [];
+        try {
+            traces = JSON.parse(String(values.mowedTrail || '[]'));
+        } catch {
+            traces = [];
+        }
+        for (const trace of traces) {
+            const points = [];
+            for (let index = 0; index + 1 < trace.length; index += 2) {
+                const x = Number(trace[index]);
+                const y = Number(trace[index + 1]);
+                if (Number.isFinite(x) && Number.isFinite(y)) points.push(`${x},${y}`);
             }
+            if (points.length < 2) continue;
+            const common = {
+                points: points.join(' '),
+                fill: 'none',
+                'stroke-linecap': 'round',
+                'stroke-linejoin': 'round'
+            };
+            overlay.append(
+                createSvgElement('polyline', {
+                    ...common,
+                    stroke: '#0f172a',
+                    'stroke-opacity': '.45',
+                    'stroke-width': '520'
+                }),
+                createSvgElement('polyline', {
+                    ...common,
+                    stroke: '#22c55e',
+                    'stroke-opacity': '.8',
+                    'stroke-width': '360'
+                })
+            );
         }
     }
 
@@ -87,38 +91,34 @@
         const heading = Number(values.positionHeading) || 0;
         const robot = createSvgElement('g', {
             transform: `translate(${x} ${-y}) rotate(${heading})`,
-            'aria-label': 'GOAT position'
+            'aria-label': `GOAT position, Fahrtrichtung ${heading} Grad`
         });
-        robot.append(
-            createSvgElement('circle', { r: '310', fill: '#2563eb', stroke: '#ffffff', 'stroke-width': '85' }),
-            createSvgElement('path', { d: 'M 0 -360 L 190 150 L 0 80 L -190 150 Z', fill: '#ffffff' })
+        const body = createSvgElement('g', {
+            filter: 'drop-shadow(0 80px 90px rgba(0,0,0,.42))'
+        });
+        body.append(
+            createSvgElement('rect', { x: '-315', y: '-245', width: '115', height: '430', rx: '55', fill: '#111827', stroke: '#ffffff', 'stroke-width': '35' }),
+            createSvgElement('rect', { x: '200', y: '-245', width: '115', height: '430', rx: '55', fill: '#111827', stroke: '#ffffff', 'stroke-width': '35' }),
+            createSvgElement('path', { d: 'M -205 -300 Q 0 -410 205 -300 L 245 -155 L 225 245 Q 0 355 -225 245 L -245 -155 Z', fill: '#2563eb', stroke: '#ffffff', 'stroke-width': '65', 'stroke-linejoin': 'round' }),
+            createSvgElement('path', { d: 'M -125 -110 Q 0 -180 125 -110 L 105 135 Q 0 205 -105 135 Z', fill: '#0f172a', 'fill-opacity': '.8' }),
+            createSvgElement('circle', { cx: '0', cy: '45', r: '82', fill: '#22c55e', stroke: '#ffffff', 'stroke-width': '24' }),
+            createSvgElement('path', { d: 'M 0 -470 L 120 -285 L 0 -325 L -120 -285 Z', fill: '#ffffff', stroke: '#2563eb', 'stroke-width': '24', 'stroke-linejoin': 'round' })
         );
+        robot.append(body);
         overlay.append(robot);
     }
 
     function render() {
         if (!mapSvg || !overlay) return;
         overlay.replaceChildren();
-        let tracks = {};
-        try {
-            tracks = JSON.parse(String(values.tracks || '{}'));
-        } catch {
-            tracks = {};
-        }
-        appendTrackGroups([
-            ...(tracks.nonScheduledRemaining || []),
-            ...(tracks.scheduledRemaining || [])
-        ], false);
-        appendTrackGroups([
-            ...(tracks.nonScheduledCompleted || []),
-            ...(tracks.scheduledCompleted || [])
-        ], true);
+        renderMowedTrail();
         renderRobot();
 
         const percentage = formatNumber(values.mowingProgress, 0);
         const mowed = formatNumber(values.mowedSquareMeters, 1);
         const total = formatNumber(values.totalSquareMeters, 1);
-        progress.textContent = `${percentage} % · ${mowed} / ${total} m²`;
+        const heading = formatNumber(values.positionHeading, 0);
+        progress.textContent = `${percentage} % · ${mowed} / ${total} m² · ${heading}°`;
     }
 
     function updateState(id, state) {

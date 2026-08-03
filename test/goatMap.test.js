@@ -49,6 +49,7 @@ describe('goatMap.js', () => {
             trimBoundaries,
             areas,
             tracks,
+            mowedTrail: [[0, 0, 50, 50]],
             position: { x: 50, y: 50, heading: 90, valid: true }
         });
 
@@ -58,7 +59,7 @@ describe('goatMap.js', () => {
         expect(svg).to.include('<svg');
         expect(svg).to.include('Bereich 1');
         expect(svg).to.include('#8e24aa');
-        expect(svg).to.include('#2e7d32');
+        expect(svg).to.include('#22c55e');
         expect(svg).to.include('GOAT position');
     });
 
@@ -66,6 +67,7 @@ describe('goatMap.js', () => {
         const ctx = createMockCtx();
         ctx.getPlatformType.returns('lawnMower');
         ctx.getModel().getDeviceClass.returns('2i0fns');
+        goatMap.handleWorkState(ctx, 'clean');
 
         expect(goatMap.handlePayload(ctx, {
             deebotPos: { x: 1250, y: -750, a: 45, invalid: 0 }
@@ -75,6 +77,12 @@ describe('goatMap.js', () => {
         )).to.be.true;
         expect(ctx.adapterProxy.setStateConditional.calledWith(
             'map.goat.positionValid', true, true
+        )).to.be.true;
+        expect(goatMap.handlePayload(ctx, {
+            deebotPos: { x: 1450, y: -750, a: 90, invalid: 0 }
+        })).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'map.goat.mowedTrail', '[[1250,750,1450,750]]', true
         )).to.be.true;
         expect(ctx.adapterProxy.setStateConditional.calledWith(
             'map.goat.mapId', sinon.match.any, true
@@ -143,6 +151,24 @@ describe('goatMap.js', () => {
         expect(ctx.adapterProxy.setStateConditional.calledWith(
             'map.goat.remainingTrackCount', 1, true
         )).to.be.true;
+    });
+
+    it('should replace plan updates instead of accumulating false completed stripes', () => {
+        const ctx = createMockCtx();
+        ctx.getPlatformType.returns('lawnMower');
+        ctx.getModel().getDeviceClass.returns('2i0fns');
+        const first = encodeGoatFixture([
+            ['1', '2', '1;1;306;-1200,-2050;-1200,5450']
+        ]);
+        const second = encodeGoatFixture([
+            ['1', '2', '1;1;306;-1200,-2050;-1200,3400']
+        ]);
+
+        goatMap.handlePayload(ctx, { batid: 'first', serial: '1', info: first });
+        goatMap.handlePayload(ctx, { batid: 'second', serial: '1', info: second });
+
+        expect(ctx.goatMapData.tracks.nonScheduledCompleted[0].lids[0].traces)
+            .to.deep.equal([[-1200, 2050, -1200, -3400]]);
     });
 
     it('should consume getMI and queue only read-only map follow-ups', () => {
