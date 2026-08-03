@@ -155,7 +155,7 @@ describe('goatMap.js', () => {
         expect(ctx.intervalQueue.run.called).to.be.false;
     });
 
-    it('should queue only read-only static and live map requests on refresh', () => {
+    it('should queue only the isolated read-only static map request on refresh', () => {
         const ctx = createMockCtx();
         ctx.getPlatformType.returns('lawnMower');
         ctx.getModel().getDeviceClass.returns('2i0fns');
@@ -166,13 +166,7 @@ describe('goatMap.js', () => {
         expect(ctx.intervalQueue.add.calledWith(
             'Generic', 'getMI', { type: '0' }
         )).to.be.true;
-        expect(ctx.intervalQueue.add.calledWith(
-            'Generic', 'getPos', ['chargePos', 'deebotPos']
-        )).to.be.true;
-        expect(ctx.intervalQueue.add.calledWith('Generic', 'getMapTrack')).to.be.true;
-        expect(ctx.intervalQueue.add.calledWith(
-            'Generic', 'getInfo', ['getStats']
-        )).to.be.true;
+        expect(ctx.intervalQueue.add.calledOnce).to.be.true;
         expect(ctx.intervalQueue.runAll.calledOnce).to.be.true;
     });
 });
