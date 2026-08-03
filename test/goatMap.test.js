@@ -185,20 +185,19 @@ describe('goatMap.js', () => {
         expect(ctx.intervalQueue.run.called).to.be.false;
     });
 
-    it('should queue only the isolated read-only static map request on refresh', () => {
+    it('should dispatch only the isolated read-only static map request on refresh', () => {
         const ctx = createMockCtx();
         ctx.getPlatformType.returns('lawnMower');
         ctx.getModel().getDeviceClass.returns('2i0fns');
-        ctx.intervalQueue.add = sinon.stub();
         ctx.intervalQueue.resetQueue = sinon.stub();
-        ctx.intervalQueue.startNextItemFromQueue = sinon.stub();
 
         expect(goatMap.requestMap(ctx)).to.be.true;
         expect(ctx.intervalQueue.resetQueue.calledOnce).to.be.true;
-        expect(ctx.intervalQueue.add.calledWith(
+        expect(ctx.vacbot.run.calledOnceWith(
             'Generic', 'getMI', { type: '0' }
         )).to.be.true;
-        expect(ctx.intervalQueue.add.calledOnce).to.be.true;
-        expect(ctx.intervalQueue.startNextItemFromQueue.calledOnceWith(false)).to.be.true;
+        expect(ctx.adapter.setState.calledWith(
+            'test_device.map.goat.status', 'loading', true
+        )).to.be.true;
     });
 });
