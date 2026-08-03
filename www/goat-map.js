@@ -244,6 +244,49 @@
             .sort(([, left], [, right]) => polygonArea(left) - polygonArea(right))[0]?.[0];
     }
 
+    /** Returns the squared distance from one SVG point to one line segment. */
+    function distanceToSegmentSquared(point, start, end) {
+        const deltaX = end.x - start.x;
+        const deltaY = end.y - start.y;
+        const lengthSquared = deltaX * deltaX + deltaY * deltaY;
+        if (!lengthSquared) return (point.x - start.x) ** 2 + (point.y - start.y) ** 2;
+        const position = Math.max(0, Math.min(1,
+            ((point.x - start.x) * deltaX + (point.y - start.y) * deltaY) / lengthSquared));
+        const nearestX = start.x + position * deltaX;
+        const nearestY = start.y + position * deltaY;
+        return (point.x - nearestX) ** 2 + (point.y - nearestY) ** 2;
+    }
+
+    /** Resolves a click close to a visible physical or virtual trim boundary. */
+    function boundaryAtPointer(event) {
+        const matrix = mapSvg.getScreenCTM();
+        if (!matrix) return undefined;
+        const point = mapSvg.createSVGPoint();
+        point.x = event.clientX;
+        point.y = event.clientY;
+        const mapPoint = point.matrixTransform(matrix.inverse());
+        const screenScale = Math.min(
+            Math.hypot(matrix.a, matrix.b),
+            Math.hypot(matrix.c, matrix.d)
+        );
+        if (!Number.isFinite(screenScale) || screenScale <= 0) return undefined;
+        const maximumDistanceSquared = (22 / screenScale) ** 2;
+        let nearest;
+        for (const entry of boundaryEntries.values()) {
+            for (let index = 1; index < entry.points.length; index++) {
+                const distanceSquared = distanceToSegmentSquared(
+                    mapPoint,
+                    entry.points[index - 1],
+                    entry.points[index]
+                );
+                if (!nearest || distanceSquared < nearest.distanceSquared) {
+                    nearest = { entry, distanceSquared };
+                }
+            }
+        }
+        return nearest && nearest.distanceSquared <= maximumDistanceSquared ? nearest.entry : undefined;
+    }
+
     /** Makes the five labelled lawn polygons keyboard- and pointer-selectable. */
     function bindSelectableAreas() {
         const polygons = Array.from(mapSvg.children).filter(element => element.localName === 'polygon');
@@ -284,20 +327,30 @@
         }
         mapSvg.addEventListener('click', event => {
             if (suppressNextClick) return;
-            if (selectionMode !== 'areas') return;
-            const areaId = areaAtPointer(event);
-            if (areaId !== undefined) toggleArea(areaId);
+            if (selectionMode === 'areas') {
+                const areaId = areaAtPointer(event);
+                if (areaId !== undefined) toggleArea(areaId);
+                return;
+            }
+            const boundary = boundaryAtPointer(event);
+            if (boundary) toggleBoundary(boundary.type, boundary.id);
         });
         renderSelection();
     }
 
     /** Converts decoded GOAT points to the SVG coordinate system. */
     function geometryPoints(points) {
+        return mapGeometryPoints(points)
+            .map(point => `${point.x},${point.y}`)
+            .join(' ');
+    }
+
+    /** Converts decoded GOAT points to numeric SVG coordinates. */
+    function mapGeometryPoints(points) {
         return (Array.isArray(points) ? points : [])
             .filter(point => Array.isArray(point) && point.length >= 2
                 && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1])))
-            .map(point => `${Number(point[0])},${-Number(point[1])}`)
-            .join(' ');
+            .map(point => ({ x: Number(point[0]), y: -Number(point[1]) }));
     }
 
     /** Creates selectable physical and virtual trim-boundary overlays. */
@@ -318,8 +371,9 @@
         for (const [type, layerName, color, abbreviation] of layers) {
             for (const item of Array.isArray(geometry[layerName]) ? geometry[layerName] : []) {
                 const id = String(item.id || '');
+                const mapPoints = mapGeometryPoints(item.points);
                 const points = geometryPoints(item.points);
-                if (!id || !points) continue;
+                if (!id || mapPoints.length < 2) continue;
                 const group = createSvgElement('g', {
                     class: `goat-boundary goat-boundary-${type}`,
                     'data-boundary-type': type,
@@ -368,7 +422,7 @@
                 });
                 group.append(visible, hit, label);
                 boundaryOverlay.append(group);
-                boundaryEntries.set(`${type}:${id}`, { type, id, group, hit });
+                boundaryEntries.set(`${type}:${id}`, { type, id, group, hit, points: mapPoints });
             }
         }
         renderSelection();
