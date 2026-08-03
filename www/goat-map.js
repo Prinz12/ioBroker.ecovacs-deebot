@@ -82,18 +82,63 @@
         socket.emit('setState', `${selectionBasePath}.Area${areaId}`, nextValue);
     }
 
+    /** Copies a browser SVGPointList into a regular array. */
+    function polygonPoints(polygon) {
+        return Array.from({ length: polygon.points.numberOfItems }, (_, index) => polygon.points.getItem(index));
+    }
+
+    /** Returns the absolute shoelace area of an SVG polygon. */
+    function polygonArea(polygon) {
+        const points = polygonPoints(polygon);
+        return Math.abs(points.reduce((sum, point, index) => {
+            const next = points[(index + 1) % points.length];
+            return sum + point.x * next.y - next.x * point.y;
+        }, 0)) / 2;
+    }
+
+    /** Tests whether an SVG coordinate lies inside a polygon. */
+    function polygonContainsPoint(polygon, x, y) {
+        const points = polygonPoints(polygon);
+        let inside = false;
+        for (let index = 0, previous = points.length - 1; index < points.length; previous = index++) {
+            const currentPoint = points[index];
+            const previousPoint = points[previous];
+            const crosses = currentPoint.y > y !== previousPoint.y > y
+                && x < (previousPoint.x - currentPoint.x) * (y - currentPoint.y)
+                    / (previousPoint.y - currentPoint.y) + currentPoint.x;
+            if (crosses) inside = !inside;
+        }
+        return inside;
+    }
+
+    /** Finds the actual area polygon belonging to a map label. */
+    function findAreaPolygon(polygons, label, usedPolygons) {
+        const x = Number(label.getAttribute('x'));
+        const y = Number(label.getAttribute('y'));
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return undefined;
+        return polygons
+            .filter(polygon => !usedPolygons.has(polygon) && polygonContainsPoint(polygon, x, y))
+            .sort((left, right) => polygonArea(left) - polygonArea(right))[0];
+    }
+
     /** Makes the five labelled lawn polygons keyboard- and pointer-selectable. */
     function bindSelectableAreas() {
         const polygons = Array.from(mapSvg.children).filter(element => element.localName === 'polygon');
         const labels = Array.from(mapSvg.children).filter(element => /^Bereich\s+\d+$/u.test(element.textContent.trim()));
-        if (polygons.length !== labels.length) return;
+        const areaCandidates = polygons.filter(polygon => {
+            const opacity = polygon.getAttribute('fill-opacity');
+            return opacity !== null && Number(opacity) < 1;
+        });
+        const directCandidates = areaCandidates.length === labels.length ? areaCandidates : undefined;
+        const usedPolygons = new Set();
 
         labels.forEach((label, index) => {
             const match = /^Bereich\s+(\d+)$/u.exec(label.textContent.trim());
             const areaId = Number(match?.[1]);
-            const polygon = polygons[index];
+            const polygon = directCandidates?.[index] || findAreaPolygon(polygons, label, usedPolygons);
             if (!Number.isInteger(areaId) || !areaNames.includes(`Area${areaId}`) || !polygon) return;
 
+            usedPolygons.add(polygon);
             areaPolygons.set(areaId, polygon);
             polygon.classList.add('goat-area-selectable');
             polygon.setAttribute('data-area-id', String(areaId));
@@ -242,6 +287,7 @@
     socket.on('disconnect', () => {
         progress.textContent = 'Live-Verbindung getrennt';
     });
+    if (socket.connected) subscribe();
 
     loadMap().catch(error => {
         message.textContent = error?.message || 'Gartenkarte konnte nicht geladen werden';
