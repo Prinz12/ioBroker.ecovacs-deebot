@@ -115,6 +115,36 @@ describe('goatMap.js', () => {
         )).to.be.true;
     });
 
+    it('should bridge every multipart GOAT telemetry packet after normal dispatch', async () => {
+        const ctx = createMockCtx();
+        ctx.getPlatformType.returns('lawnMower');
+        ctx.getModel().getDeviceClass.returns('2i0fns');
+        const original = sinon.stub().resolves('handled');
+        const vacbot = { dispatcher: { handleMessagePayload: original } };
+        const encoded = encodeGoatFixture([
+            ['1', '1', '1;1;remaining;0,0;100,0'],
+            ['1', '2', '1;2;completed;0,0;4(2)2(2)']
+        ]);
+        const middle = Math.floor(encoded.length / 2);
+
+        expect(goatMap.registerTelemetryBridge(vacbot, ctx)).to.be.true;
+        expect(goatMap.registerTelemetryBridge(vacbot, ctx)).to.be.true;
+        expect(await vacbot.dispatcher.handleMessagePayload('_getMapTrack', {
+            batid: 'batch-bridge', serial: '2', index: '0', info: encoded.slice(0, middle)
+        })).to.equal('handled');
+        await vacbot.dispatcher.handleMessagePayload('_getMapTrack', {
+            batid: 'batch-bridge', serial: '2', index: '1', info: encoded.slice(middle)
+        });
+
+        expect(original.callCount).to.equal(2);
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'map.goat.completedTrackCount', 1, true
+        )).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'map.goat.remainingTrackCount', 1, true
+        )).to.be.true;
+    });
+
     it('should consume getMI and queue only read-only map follow-ups', () => {
         const ctx = createMockCtx();
         ctx.getPlatformType.returns('lawnMower');
