@@ -153,6 +153,9 @@
             });
             label.style.pointerEvents = 'none';
         });
+        for (const polygon of polygons) {
+            if (!usedPolygons.has(polygon)) polygon.style.pointerEvents = 'none';
+        }
         renderSelection();
     }
 
