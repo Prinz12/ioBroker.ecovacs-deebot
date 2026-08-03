@@ -129,10 +129,10 @@ describe('goatMap.js', () => {
 
         expect(goatMap.registerTelemetryBridge(vacbot, ctx)).to.be.true;
         expect(goatMap.registerTelemetryBridge(vacbot, ctx)).to.be.true;
-        expect(await vacbot.ecovacs.dispatcher.handleMessagePayload('_getMapTrack', {
+        expect(await vacbot.ecovacs.dispatcher.handleMessagePayload('_onMapTrack', {
             batid: 'batch-bridge', serial: '2', index: '0', info: encoded.slice(0, middle)
         })).to.equal('handled');
-        await vacbot.ecovacs.dispatcher.handleMessagePayload('_getMapTrack', {
+        await vacbot.ecovacs.dispatcher.handleMessagePayload('_onMapTrack', {
             batid: 'batch-bridge', serial: '2', index: '1', info: encoded.slice(middle)
         });
 
