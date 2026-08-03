@@ -63,6 +63,21 @@ describe('goatMap.js', () => {
         expect(svg).to.include('GOAT position');
     });
 
+    it('should render positioned subareas without local main-map templates', () => {
+        const svg = goatMap.renderSvg({
+            main: [{
+                points: [[0, 0], [100, 0], [100, 100], [0, 100]]
+            }],
+            subareas: [{
+                points: [[1000, 2000], [1100, 2000], [1100, 2100], [1000, 2100]]
+            }]
+        });
+
+        expect(svg.match(/<polygon\b/gu)).to.have.lengthOf(1);
+        expect(svg).not.to.include('fill="#dcedc8"');
+        expect(svg).to.include('viewBox="500 -2600 1100 1100"');
+    });
+
     it('should parse position, progress and chunked mowing tracks read-only', () => {
         const ctx = createMockCtx();
         ctx.getPlatformType.returns('lawnMower');
