@@ -76,6 +76,12 @@ describe('goatMap.js', () => {
         expect(ctx.adapterProxy.setStateConditional.calledWith(
             'map.goat.positionValid', true, true
         )).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'map.goat.mapId', sinon.match.any, true
+        )).to.be.false;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'map.goat.svg', '', true
+        )).to.be.false;
 
         expect(goatMap.handlePayload(ctx, {
             getStats: { code: 0, data: { mowedArea: 250000, area: 1000000 } },
