@@ -35,7 +35,13 @@
     let mapSvg;
     let boundaryOverlay;
     let overlay;
-    let selectionMode = 'areas';
+    let selectionMode = (() => {
+        try {
+            return window.sessionStorage.getItem('ecovacs-goat-map-selection-mode') === 'trim' ? 'trim' : 'areas';
+        } catch {
+            return 'areas';
+        }
+    })();
     let initialViewBox;
     let currentViewBox;
     let gesture;
@@ -70,9 +76,21 @@
         'liveLastUpdate'
     ];
     const areaNames = ['Area1', 'Area2', 'Area3', 'Area4', 'Area5'];
+    const boundarySelections = [
+        { type: 'physical', id: '3', stateName: 'Physical3' },
+        { type: 'physical', id: '1', stateName: 'Physical1' },
+        { type: 'virtual', id: '3', stateName: 'Virtual3' },
+        { type: 'virtual', id: '2', stateName: 'Virtual2' },
+        { type: 'virtual', id: '1', stateName: 'Virtual1' }
+    ];
+    const boundarySelectionByState = new Map(boundarySelections.map(item => [item.stateName, item]));
+    const boundarySelectionById = new Map(boundarySelections.map(item => [`${item.type}:${item.id}`, item]));
     const mapStateIds = stateNames.map(name => `${basePath}.${name}`);
     const liveStateIds = liveStateNames.map(name => `${basePath}.${name}`);
-    const selectionStateIds = areaNames.map(name => `${selectionBasePath}.${name}`);
+    const selectionStateIds = [
+        ...areaNames,
+        ...boundarySelections.map(item => item.stateName)
+    ].map(name => `${selectionBasePath}.${name}`);
     const controlStateIds = [
         `${controlBasePath}.trimBoundaryIds`,
         `${controlBasePath}.trimVirtualBoundaryIds`
@@ -114,6 +132,21 @@
         return new Set(String(value || '').split(',').map(item => item.trim()).filter(Boolean));
     }
 
+    /** Keeps the two VIS input widgets visually in sync with externally staged boundary IDs. */
+    function updateParentBoundaryInput(type, value) {
+        if (window.parent === window) return;
+        try {
+            const widgetId = type === 'physical' ? 'goat_trim_ids' : 'goat_trim_virtual';
+            const input = window.parent.document.querySelector(`#${widgetId} input`);
+            if (!input || input.value === value) return;
+            const setter = Object.getOwnPropertyDescriptor(window.parent.HTMLInputElement.prototype, 'value')?.set;
+            if (setter) setter.call(input, value);
+            else input.value = value;
+        } catch {
+            // The standalone map also works when no same-origin VIS parent is available.
+        }
+    }
+
     /** Updates all selection outlines and the compact selection summary. */
     function renderSelection() {
         const selectedAreaIds = [];
@@ -150,6 +183,7 @@
         const stateName = type === 'physical' ? 'trimBoundaryIds' : 'trimVirtualBoundaryIds';
         const value = sortIds(selectedBoundaries[type]).join(',');
         socket.emit('setState', `${controlBasePath}.${stateName}`, { val: value, ack: false });
+        updateParentBoundaryInput(type, value);
     }
 
     /** Toggles one physical or virtual trim boundary. */
@@ -159,11 +193,23 @@
         else selected.add(id);
         renderSelection();
         writeBoundarySelection(type);
+        const stagedSelection = boundarySelectionById.get(`${type}:${id}`);
+        if (stagedSelection) {
+            socket.emit('setState', `${selectionBasePath}.${stagedSelection.stateName}`, {
+                val: selected.has(id),
+                ack: false
+            });
+        }
     }
 
     /** Switches between area selection and trim-boundary selection. */
     function setSelectionMode(mode) {
         selectionMode = mode === 'trim' ? 'trim' : 'areas';
+        try {
+            window.sessionStorage.setItem('ecovacs-goat-map-selection-mode', selectionMode);
+        } catch {
+            // Selection still works when browser storage is unavailable.
+        }
         mapSvg?.classList.toggle('trim-mode', selectionMode === 'trim');
         areaModeButton.classList.toggle('active', selectionMode === 'areas');
         trimModeButton.classList.toggle('active', selectionMode === 'trim');
@@ -188,6 +234,9 @@
             selectedBoundaries.virtual.clear();
             writeBoundarySelection('physical');
             writeBoundarySelection('virtual');
+            for (const item of boundarySelections) {
+                socket.emit('setState', `${selectionBasePath}.${item.stateName}`, { val: false, ack: false });
+            }
         }
         renderSelection();
     }
@@ -718,8 +767,16 @@
     function updateState(id, state) {
         if (id.startsWith(`${selectionBasePath}.`)) {
             const name = id.slice(selectionBasePath.length + 1);
-            if (!areaNames.includes(name)) return;
-            selectedAreas.set(Number(name.slice(4)), isSelected(stateValue(state)));
+            if (areaNames.includes(name)) {
+                selectedAreas.set(Number(name.slice(4)), isSelected(stateValue(state)));
+                renderSelection();
+                return;
+            }
+            const boundarySelection = boundarySelectionByState.get(name);
+            if (!boundarySelection) return;
+            const selected = selectedBoundaries[boundarySelection.type];
+            if (isSelected(stateValue(state))) selected.add(boundarySelection.id);
+            else selected.delete(boundarySelection.id);
             renderSelection();
             return;
         }
@@ -729,6 +786,7 @@
                 : name === 'trimVirtualBoundaryIds' ? 'virtual' : undefined;
             if (!type) return;
             selectedBoundaries[type] = parseSelection(stateValue(state));
+            updateParentBoundaryInput(type, sortIds(selectedBoundaries[type]).join(','));
             renderSelection();
             return;
         }
