@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>ECOVACS GOAT Live-Karte</title>
+    <style>
+        :root { color-scheme: dark; font-family: Arial, sans-serif; }
+        * { box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; }
+        #map { position: absolute; inset: 0; display: grid; place-items: center; }
+        #map svg { display: block; width: 100%; height: 100%; }
+        .badge { position: absolute; z-index: 2; padding: 6px 9px; border: 1px solid #334155; border-radius: 9px; background: #08111fd9; color: #cbd5e1; font-size: 11px; line-height: 1.35; pointer-events: none; }
+        #progress { top: 7px; right: 7px; text-align: right; }
+        #legend { left: 7px; bottom: 7px; display: flex; gap: 10px; align-items: center; }
+        .key { display: inline-flex; gap: 5px; align-items: center; white-space: nowrap; }
+        .line { width: 18px; height: 4px; border-radius: 3px; background: #22c55e; }
+        .line.remaining { height: 2px; background: repeating-linear-gradient(90deg,#94a3b8 0 5px,transparent 5px 8px); }
+        .dot { width: 8px; height: 8px; border: 2px solid #fff; border-radius: 50%; background: #2563eb; }
+        #message { inset: 0; display: grid; place-items: center; border: 0; background: transparent; color: #94a3b8; font-size: 12px; }
+        #message[hidden] { display: none; }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<div class="badge" id="progress">Live-Daten werden geladen</div>
+<div class="badge" id="legend">
+    <span class="key"><span class="line"></span>gemäht</span>
+    <span class="key"><span class="line remaining"></span>offen</span>
+    <span class="key"><span class="dot"></span>GOAT</span>
+</div>
+<div class="badge" id="message">Gartenkarte wird geladen</div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="goat-map.js?v=live-map1"></script>
+</body>
+</html>
