@@ -171,6 +171,26 @@ describe('goatMap.js', () => {
             .to.deep.equal([[-1200, 2050, -1200, -3400]]);
     });
 
+    it('should not burn live position or trail into the persisted base SVG', () => {
+        const ctx = createMockCtx();
+        ctx.getPlatformType.returns('lawnMower');
+        ctx.getModel().getDeviceClass.returns('2i0fns');
+        goatMap.handleWorkState(ctx, 'clean');
+        ctx.goatMapData.main = [{ points: [[0, 0], [100, 0], [100, 100]] }];
+        ctx.adapterProxy.setStateConditional.resetHistory();
+
+        goatMap.handlePayload(ctx, {
+            deebotPos: { x: 50, y: 50, a: 30, invalid: 0 }
+        });
+
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'map.goat.mowedTrail', '[[50,-50]]', true
+        )).to.be.true;
+        expect(ctx.adapterProxy.setStateConditional.calledWith(
+            'map.goat.svg', sinon.match.any, true
+        )).to.be.false;
+    });
+
     it('should consume getMI and queue only read-only map follow-ups', () => {
         const ctx = createMockCtx();
         ctx.getPlatformType.returns('lawnMower');
